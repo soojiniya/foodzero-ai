@@ -1,0 +1,29 @@
+{
+  "rows": 60802,
+  "unique_station_count": 54,
+  "date_min": "2021-01-01",
+  "date_max": "2024-01-31",
+  "duplicates": 0,
+  "missing": {
+    "avgTa": 61,
+    "minTa": 28,
+    "maxTa": 26,
+    "sumRn": 37990,
+    "avgRhm": 88
+  },
+  "coverage_issue_count": 1,
+  "coverage_issues": [
+    {
+      "station_id": "162",
+      "rows": 1124,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 2,
+      "missing_dates_sample": [
+        "2023-03-29",
+        "2023-03-30"
+      ]
+    }
+  ],
+  "failed_stations": []
+}

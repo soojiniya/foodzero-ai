@@ -1,0 +1,465 @@
+{
+  "date_min": "2021-01-01",
+  "date_max": "2024-01-31",
+  "rows": 60802,
+  "unique_station_count": 54,
+  "duplicate_station_date_rows": 0,
+  "missing_by_variable": {
+    "avgTa": 61,
+    "minTa": 28,
+    "maxTa": 26,
+    "sumRn": 37990,
+    "avgRhm": 88
+  },
+  "coverage": [
+    {
+      "station_id": "90",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "98",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "99",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "101",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "104",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "106",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "108",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "112",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "115",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "119",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "121",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "129",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "130",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "131",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "133",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "136",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "137",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "138",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "143",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "146",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "152",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "155",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "156",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "159",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "162",
+      "rows": 1124,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 2,
+      "missing_dates_sample": [
+        "2023-03-29",
+        "2023-03-30"
+      ]
+    },
+    {
+      "station_id": "165",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "168",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "174",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "184",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "189",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "192",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "201",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "202",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "203",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "232",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "236",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "243",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "252",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "253",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "254",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "255",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "257",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "261",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "263",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "266",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "272",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "277",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "278",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "279",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "281",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "284",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "285",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "288",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    },
+    {
+      "station_id": "294",
+      "rows": 1126,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 0,
+      "missing_dates_sample": []
+    }
+  ],
+  "coverage_issues": [
+    {
+      "station_id": "162",
+      "rows": 1124,
+      "date_min": "2021-01-01",
+      "date_max": "2024-01-31",
+      "missing_date_count": 2,
+      "missing_dates_sample": [
+        "2023-03-29",
+        "2023-03-30"
+      ]
+    }
+  ],
+  "failed_stations": []
+}

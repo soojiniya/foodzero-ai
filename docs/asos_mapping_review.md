@@ -1,0 +1,229 @@
+# ASOS 관측소 매핑 검토
+
+이 문서는 공식 기상자료개방포털 관측지점정보를 기준으로 자동 검증한 결과입니다. `validated`는 모델링 입력 후보로 사용할 근거가 충분하다는 뜻이며, 사람이 최종 승인한 `confirmed`는 아닙니다.
+
+## 출처
+
+- 기상자료개방포털 관측지점정보: https://data.kma.go.kr/tmeta/stn/selectStnList.do
+- 공공데이터포털 지상기상관측 지점정보 조회서비스: https://www.data.go.kr/data/15139439/openapi.do
+
+## 요약
+
+- 총 지자체 수: 181
+- validated: 97
+- review_required: 84
+- unusable: 0
+- 사용 가능한 ASOS 관측소 메타데이터 수: 91
+- 거리 미확인: 80
+- 지자체 대표좌표 출처: OpenStreetMap Nominatim. 공식 지자체 경계/대표좌표가 아니므로 거리 기반 매핑은 검토 보조 자료입니다.
+
+## 30km 이상 거리 플래그
+
+- `충청남도 당진시` -> `129 서산`: 33.52km, review_required
+
+## ASOS 공유 현황
+
+- `108 서울`: 18개 지자체 사용. 경기도 부천시, 서울특별시 강남구, 서울특별시 강동구, 서울특별시 강서구, 서울특별시 광진구, 서울특별시 구로구, 서울특별시 금천구, 서울특별시 동대문구, 서울특별시 동작구, 서울특별시 서초구, 서울특별시 성동구, 서울특별시 송파구, 서울특별시 양천구, 서울특별시 영등포구, 서울특별시 용산구 ...
+- `119 수원`: 8개 지자체 사용. 경기도 성남시 분당구, 경기도 수원시 권선구, 경기도 수원시 영통구, 경기도 수원시 장안구, 경기도 수원시 팔달구, 경기도 안양시, 경기도 용인시, 경기도 평택시
+- `112 인천`: 6개 지자체 사용. 인천광역시 남동구, 인천광역시 미추홀구, 인천광역시 부평구, 인천광역시 서구, 인천광역시 연수구, 인천광역시 중구
+- `143 대구`: 6개 지자체 사용. 대구광역시 달성군, 대구광역시 동구, 대구광역시 북구, 대구광역시 서구, 대구광역시 수성구, 대구광역시 중구
+- `156 광주`: 5개 지자체 사용. 광주광역시 광산구, 광주광역시 남구, 광주광역시 북구, 광주광역시 서구, 전라남도 나주시
+- `159 부산`: 5개 지자체 사용. 부산광역시 남구, 부산광역시 부산진구, 부산광역시 북구, 부산광역시 연제구, 부산광역시 중구
+- `133 대전`: 4개 지자체 사용. 대전광역시 동구, 대전광역시 서구, 대전광역시 유성구, 대전광역시 중구
+- `152 울산`: 4개 지자체 사용. 울산광역시 남구, 울산광역시 동구, 울산광역시 북구, 울산광역시 중구
+- `165 목포`: 3개 지자체 사용. 전라남도 목포시, 전라남도 무안군, 전라남도 함평군
+- `98 동두천`: 3개 지자체 사용. 경기도 동두천시, 경기도 의정부시, 경기도 포천시
+- `257 양산시`: 3개 지자체 사용. 경상남도 양산시, 부산광역시 금정구, 부산광역시 동래구
+- `129 서산`: 2개 지자체 사용. 충청남도 당진시, 충청남도 서산시
+- `136 안동`: 2개 지자체 사용. 경상북도 안동시, 경상북도 예천군
+- `146 전주`: 2개 지자체 사용. 전라북도 익산시, 전라북도 전주시
+- `202 양평`: 2개 지자체 사용. 경기도 광주시, 경기도 양평군
+- `261 해남`: 2개 지자체 사용. 전라남도 영암군, 전라남도 해남군
+- `266 광양시`: 2개 지자체 사용. 경상남도 하동군, 전라남도 광양시
+
+## 우선 검토 대상
+
+- `강원도 고성군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 동해시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 양구군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 원주시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 정선군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 철원군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 춘천시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 태백시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 홍천군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `강원도 횡성군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 가평군` -> `101 춘천`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `경기도 고양시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 과천시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 광명시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 구리시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 군포시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 김포시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 남양주시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 부천시` -> `108 서울`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `경기도 성남시 수정구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 성남시 중원구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 시흥시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 안성시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 양주시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 여주시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 연천군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 오산시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 의왕시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 평택시` -> `119 수원`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `경기도 하남시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경기도 화성시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경상남도 창녕군` -> `288 밀양`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `경상남도 하동군` -> `266 광양시`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `경상북도 경산시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경상북도 김천시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경상북도 성주군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경상북도 영양군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `경상북도 예천군` -> `136 안동`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `경상북도 칠곡군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `광주광역시 동구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `대구광역시 남구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `대구광역시 달서구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `대전광역시 대덕구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 강서구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 금정구` -> `257 양산시`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `부산광역시 기장군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 동구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 동래구` -> `257 양산시`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `부산광역시 사상구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 사하구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 서구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 수영구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 영도구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `부산광역시 해운대구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 강북구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 관악구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 노원구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 도봉구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 마포구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 서대문구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 성북구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `서울특별시 중구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `울산광역시 울주군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `인천광역시 계양구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `인천광역시 동구` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라남도 나주시` -> `156 광주`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 목포시` -> `165 목포`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 무안군` -> `165 목포`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 순천시` -> `174 순천`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 여수시` -> `168 여수`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 영암군` -> `261 해남`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 완도군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라남도 함평군` -> `165 목포`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 해남군` -> `261 해남`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=
+- `전라남도 화순군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라북도 고창군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라북도 군산시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라북도 임실군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라북도 정읍시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `전라북도 진안군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `충청남도 계룡시` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `충청남도 당진시` -> `129 서산`: 지자체명 직접 일치 ASOS가 없어 대표좌표 기준 최단거리 ASOS를 후보로 제안했습니다. 내부 관측소가 아니므로 검토가 필요합니다. 내부 ASOS가 아니며 거리, 행정권, 지역 대표성 중 일부 근거가 충분하지 않아 사람이 검토해야 합니다. flags=distance_ge_30km
+- `충청북도 음성군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+- `충청북도 진천군` -> `미지정`: 지자체명 직접 일치 ASOS가 없고 대표좌표 기준 최단거리 후보도 멀거나 좌표 확인이 불충분합니다. 공식 내부 관측소 근거와 지자체 대표좌표가 부족하여 관측소 후보를 지정하지 않았습니다. flags=station_unresolved;distance_unavailable
+
+## validated 후보
+
+- `강원도 강릉시` -> `104 북강릉` (medium, nearest_adjacent, distance=9.32)
+- `강원도 삼척시` -> `106 동해` (medium, nearest_adjacent, distance=8.19)
+- `강원도 속초시` -> `90 속초` (medium, nearest_adjacent, distance=4.97)
+- `강원도 영월군` -> `121 영월` (medium, nearest_adjacent, distance=0.88)
+- `경기도 광주시` -> `202 양평` (medium, nearest_adjacent, distance=12.61)
+- `경기도 동두천시` -> `98 동두천` (high, inside_municipality, distance=nan)
+- `경기도 성남시 분당구` -> `119 수원` (medium, nearest_adjacent, distance=18.8)
+- `경기도 수원시 권선구` -> `119 수원` (high, inside_municipality, distance=1.22)
+- `경기도 수원시 영통구` -> `119 수원` (medium, nearest_adjacent, distance=4.85)
+- `경기도 수원시 장안구` -> `119 수원` (medium, nearest_adjacent, distance=4.49)
+- `경기도 수원시 팔달구` -> `119 수원` (medium, nearest_adjacent, distance=5.62)
+- `경기도 안양시` -> `119 수원` (medium, nearest_adjacent, distance=15.26)
+- `경기도 양평군` -> `202 양평` (high, inside_municipality, distance=13.0)
+- `경기도 용인시` -> `119 수원` (medium, nearest_adjacent, distance=10.46)
+- `경기도 의정부시` -> `98 동두천` (medium, nearest_adjacent, distance=18.51)
+- `경기도 이천시` -> `203 이천` (high, inside_municipality, distance=nan)
+- `경기도 파주시` -> `99 파주` (high, inside_municipality, distance=9.45)
+- `경기도 포천시` -> `98 동두천` (medium, nearest_adjacent, distance=13.09)
+- `경상남도 거제시` -> `294 거제` (high, inside_municipality, distance=13.18)
+- `경상남도 거창군` -> `284 거창` (high, inside_municipality, distance=1.52)
+- `경상남도 고성군` -> `155 창원` (medium, nearest_adjacent, distance=19.89)
+- `경상남도 김해시` -> `253 김해시` (high, inside_municipality, distance=1.08)
+- `경상남도 양산시` -> `257 양산시` (high, inside_municipality, distance=1.92)
+- `경상남도 의령군` -> `263 의령군` (high, inside_municipality, distance=nan)
+- `경상남도 진주시` -> `192 진주` (high, inside_municipality, distance=23.23)
+- `경상남도 창원시` -> `255 북창원` (high, inside_municipality, distance=1.0)
+- `경상남도 통영시` -> `162 통영` (high, inside_municipality, distance=26.56)
+- `경상남도 합천군` -> `285 합천` (high, inside_municipality, distance=5.11)
+- `경상북도 구미시` -> `279 구미` (high, inside_municipality, distance=1.61)
+- `경상북도 상주시` -> `137 상주` (high, inside_municipality, distance=nan)
+- `경상북도 안동시` -> `136 안동` (high, inside_municipality, distance=17.86)
+- `경상북도 영덕군` -> `277 영덕` (high, inside_municipality, distance=nan)
+- `경상북도 영주시` -> `272 영주` (high, inside_municipality, distance=nan)
+- `경상북도 영천시` -> `281 영천` (high, inside_municipality, distance=nan)
+- `경상북도 울릉군` -> `115 울릉도` (high, inside_municipality, distance=nan)
+- `경상북도 울진군` -> `130 울진` (high, inside_municipality, distance=nan)
+- `경상북도 의성군` -> `278 의성` (high, inside_municipality, distance=nan)
+- `경상북도 포항시` -> `138 포항` (high, inside_municipality, distance=7.28)
+- `광주광역시 광산구` -> `156 광주` (medium, regional_representative, distance=8.61)
+- `광주광역시 남구` -> `156 광주` (medium, regional_representative, distance=3.59)
+- `광주광역시 북구` -> `156 광주` (medium, regional_representative, distance=2.61)
+- `광주광역시 서구` -> `156 광주` (medium, regional_representative, distance=3.85)
+- `대구광역시 달성군` -> `143 대구` (medium, regional_representative, distance=12.63)
+- `대구광역시 동구` -> `143 대구` (high, inside_municipality, distance=nan)
+- `대구광역시 북구` -> `143 대구` (medium, regional_representative, distance=4.81)
+- `대구광역시 서구` -> `143 대구` (medium, regional_representative, distance=7.85)
+- `대구광역시 수성구` -> `143 대구` (medium, regional_representative, distance=4.06)
+- `대구광역시 중구` -> `143 대구` (medium, regional_representative, distance=6.28)
+- `대전광역시 동구` -> `133 대전` (medium, regional_representative, distance=5.41)
+- `대전광역시 서구` -> `133 대전` (medium, regional_representative, distance=7.05)
+- `대전광역시 유성구` -> `133 대전` (high, inside_municipality, distance=3.35)
+- `대전광역시 중구` -> `133 대전` (medium, regional_representative, distance=7.42)
+- `부산광역시 남구` -> `159 부산` (medium, regional_representative, distance=6.77)
+- `부산광역시 부산진구` -> `159 부산` (medium, regional_representative, distance=8.49)
+- `부산광역시 북구` -> `159 부산` (medium, regional_representative, distance=10.8)
+- `부산광역시 연제구` -> `159 부산` (medium, regional_representative, distance=10.56)
+- `부산광역시 중구` -> `159 부산` (high, inside_municipality, distance=nan)
+- `서울특별시 강남구` -> `108 서울` (medium, regional_representative, distance=8.41)
+- `서울특별시 강동구` -> `108 서울` (medium, regional_representative, distance=15.94)
+- `서울특별시 강서구` -> `108 서울` (medium, regional_representative, distance=13.1)
+- `서울특별시 광진구` -> `108 서울` (medium, regional_representative, distance=9.6)
+- `서울특별시 구로구` -> `108 서울` (medium, regional_representative, distance=10.91)
+- `서울특별시 금천구` -> `108 서울` (medium, regional_representative, distance=15.73)
+- `서울특별시 동대문구` -> `108 서울` (medium, regional_representative, distance=8.07)
+- `서울특별시 동작구` -> `108 서울` (medium, regional_representative, distance=9.37)
+- `서울특별시 서초구` -> `108 서울` (medium, regional_representative, distance=15.74)
+- `서울특별시 성동구` -> `108 서울` (medium, regional_representative, distance=5.66)
+- `서울특별시 송파구` -> `108 서울` (medium, regional_representative, distance=11.68)
+- `서울특별시 양천구` -> `108 서울` (medium, regional_representative, distance=13.43)
+- `서울특별시 영등포구` -> `108 서울` (medium, regional_representative, distance=8.47)
+- `서울특별시 용산구` -> `108 서울` (medium, regional_representative, distance=5.66)
+- `서울특별시 은평구` -> `108 서울` (medium, regional_representative, distance=4.48)
+- `서울특별시 종로구` -> `108 서울` (high, inside_municipality, distance=2.07)
+- `서울특별시 중랑구` -> `108 서울` (medium, regional_representative, distance=12.52)
+- `울산광역시 남구` -> `152 울산` (medium, regional_representative, distance=7.48)
+- `울산광역시 동구` -> `152 울산` (medium, regional_representative, distance=8.38)
+- `울산광역시 북구` -> `152 울산` (medium, regional_representative, distance=8.38)
+- `울산광역시 중구` -> `152 울산` (high, inside_municipality, distance=1.65)
+- `인천광역시 강화군` -> `201 강화` (high, inside_municipality, distance=nan)
+- `인천광역시 남동구` -> `112 인천` (medium, regional_representative, distance=7.3)
+- `인천광역시 미추홀구` -> `112 인천` (medium, regional_representative, distance=2.66)
+- `인천광역시 부평구` -> `112 인천` (medium, regional_representative, distance=6.2)
+- `인천광역시 서구` -> `112 인천` (medium, regional_representative, distance=8.74)
+- `인천광역시 연수구` -> `112 인천` (medium, regional_representative, distance=9.74)
+- `인천광역시 중구` -> `112 인천` (medium, regional_representative, distance=1.4)
+- `전라남도 광양시` -> `266 광양시` (high, inside_municipality, distance=8.55)
+- `전라남도 영광군` -> `252 영광군` (high, inside_municipality, distance=5.55)
+- `전라북도 부안군` -> `243 부안` (medium, nearest_adjacent, distance=1.85)
+- `전라북도 순창군` -> `254 순창군` (high, inside_municipality, distance=22.08)
+- `전라북도 익산시` -> `146 전주` (medium, nearest_adjacent, distance=13.23)
+- `전라북도 전주시` -> `146 전주` (medium, nearest_adjacent, distance=4.85)
+- `제주특별자치도 서귀포시` -> `189 서귀포` (high, inside_municipality, distance=1.04)
+- `제주특별자치도 제주시` -> `184 제주` (high, inside_municipality, distance=3.87)
+- `충청남도 부여군` -> `236 부여` (high, inside_municipality, distance=4.5)
+- `충청남도 서산시` -> `129 서산` (high, inside_municipality, distance=2.54)
+- `충청남도 아산시` -> `232 천안` (medium, nearest_adjacent, distance=18.24)
+- `충청북도 청주시` -> `131 청주` (high, inside_municipality, distance=9.79)

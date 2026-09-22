@@ -1,0 +1,17 @@
+.env
+.venv/
+.deps/
+.ml_deps/
+.ml_deps_backup/
+__pycache__/
+.pytest_cache/
+*.pyc
+models/
+evaluation/
+data/interim/
+data/processed/
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+.matplotlib/
+.venv_broken_*/
+.vscode/
