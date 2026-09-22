@@ -1,3 +1,11 @@
+# FoodZero
+
+공공데이터 기반 음식물쓰레기 발생량 예측 및 스마트 수거·감축 지원 플랫폼
+
+## Project Link
+
+[FoodZero GitHub Repository](https://github.com/soojiniya/foodzero-ai)
+
 # FoodZero AI 데이터 파이프라인
 
 지자체별 일별 음식물쓰레기 배출량을 기상, 인구, 날짜 특성으로 예측하기 위한 데이터 수집 및 전처리 단계입니다. 이번 범위는 원본 검사, 기상 데이터 수집, 지자체-ASOS 관측소 매핑, 인구 결합, 파생변수 생성, 최종 학습 데이터셋 생성까지입니다.
