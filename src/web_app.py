@@ -17,13 +17,16 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 
-from foodzero.config import DOCS_DIR, PROCESSED_DIR
-from foodzero.next_day_modeling import NEXT_DAY_MODEL_PATH, NEXT_DAY_SERVICE_FEATURES_PATH, FEATURES, predict_next_day, sklearn_imports
+from foodzero.next_day_modeling import predict_next_day, sklearn_imports
 
 
-NEXT_DAY_DATASET_PATH = PROCESSED_DIR / "next_day_model_dataset.csv"
-FOODZERO_MODEL_DATASET_PATH = PROCESSED_DIR / "foodzero_model_dataset.csv"
-NEXT_DAY_EVAL_DIR = PROJECT_ROOT / "evaluation" / "next_day"
+DEPLOY_DATA_DIR = PROJECT_ROOT / "data" / "deploy"
+DEPLOY_MODEL_DIR = PROJECT_ROOT / "models" / "deploy"
+NEXT_DAY_SERVICE_FEATURES_PATH = DEPLOY_DATA_DIR / "next_day_service_features.parquet"
+NEXT_DAY_DATASET_PATH = DEPLOY_DATA_DIR / "next_day_model_dataset.parquet"
+DATA_OVERVIEW_COUNTS_PATH = DEPLOY_DATA_DIR / "data_overview_counts.json"
+NEXT_DAY_MODEL_PATH = DEPLOY_MODEL_DIR / "foodzero_next_day_model.joblib"
+NEXT_DAY_EVAL_DIR = PROJECT_ROOT / "evaluation" / "deploy" / "next_day"
 MODEL_VERSION = "foodzero-next-day-rf-v1"
 
 
@@ -106,7 +109,7 @@ def status_badge(level: str) -> str:
 
 @st.cache_data(show_spinner=False)
 def load_service_features() -> pd.DataFrame:
-    df = pd.read_csv(NEXT_DAY_SERVICE_FEATURES_PATH, encoding="utf-8-sig")
+    df = pd.read_parquet(NEXT_DAY_SERVICE_FEATURES_PATH)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["target_date"] = pd.to_datetime(df["target_date"], errors="coerce")
     sido_sigungu = df["sigungu_key"].map(split_admin_key)
@@ -117,7 +120,7 @@ def load_service_features() -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def load_next_day_dataset() -> pd.DataFrame:
-    df = pd.read_csv(NEXT_DAY_DATASET_PATH, encoding="utf-8-sig")
+    df = pd.read_parquet(NEXT_DAY_DATASET_PATH)
     df["date"] = pd.to_datetime(df["date"], errors="coerce")
     df["target_date"] = pd.to_datetime(df["target_date"], errors="coerce")
     sido_sigungu = df["sigungu_key"].map(split_admin_key)
@@ -128,9 +131,7 @@ def load_next_day_dataset() -> pd.DataFrame:
 
 @st.cache_data(show_spinner=False)
 def load_data_overview_counts() -> dict[str, int]:
-    source_rows = len(pd.read_csv(FOODZERO_MODEL_DATASET_PATH, encoding="utf-8-sig", usecols=["date"]))
-    modeling_rows = len(pd.read_csv(NEXT_DAY_DATASET_PATH, encoding="utf-8-sig", usecols=["date"]))
-    return {"source_rows": source_rows, "modeling_rows": modeling_rows}
+    return json.loads(DATA_OVERVIEW_COUNTS_PATH.read_text(encoding="utf-8"))
 
 
 @st.cache_resource(show_spinner=False)
@@ -236,7 +237,12 @@ def get_available_reference_dates(municipality: str | None = None) -> list[pd.Ti
 
 
 def run_prediction(municipality: str, reference_date: pd.Timestamp) -> dict[str, Any]:
-    return predict_next_day(municipality, reference_date.date().isoformat())
+    return predict_next_day(
+        municipality,
+        reference_date.date().isoformat(),
+        model_path=NEXT_DAY_MODEL_PATH,
+        service_features_path=NEXT_DAY_SERVICE_FEATURES_PATH,
+    )
 
 
 def actual_outcome_for_prediction(municipality: str, prediction_date: pd.Timestamp) -> float | None:

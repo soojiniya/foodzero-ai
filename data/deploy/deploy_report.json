@@ -1,0 +1,26 @@
+{
+  "service_rows": 185402,
+  "service_municipalities": 179,
+  "next_day_rows": 185402,
+  "next_day_municipalities": 179,
+  "source_model_mb": 124.61,
+  "deploy_model_mb": 30.91,
+  "service_parquet_mb": 7.96,
+  "next_day_parquet_mb": 4.21,
+  "counts_json_mb": 0.0001,
+  "prediction_equal": false,
+  "prediction_allclose": false,
+  "max_abs_prediction_diff": 2.9802322387695312e-08,
+  "deploy_files": {
+    "data\\deploy\\next_day_service_features.parquet": 7.9581,
+    "data\\deploy\\next_day_model_dataset.parquet": 4.2137,
+    "data\\deploy\\data_overview_counts.json": 0.0001,
+    "models\\deploy\\foodzero_next_day_model.joblib": 30.9053,
+    "evaluation\\deploy\\next_day\\model_comparison.csv": 0.0005,
+    "evaluation\\deploy\\next_day\\municipality_metrics.csv": 0.0178,
+    "evaluation\\deploy\\next_day\\surge_threshold_analysis.csv": 0.0004,
+    "evaluation\\deploy\\next_day\\feature_importance.csv": 0.0009,
+    "evaluation\\deploy\\next_day\\size_group_metrics.csv": 0.0003,
+    "evaluation\\deploy\\next_day\\test_metrics.json": 0.0006
+  }
+}

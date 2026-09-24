@@ -1,0 +1,25 @@
+{
+  "MAE": 1036144.9246327115,
+  "RMSE": 2590857.8171522114,
+  "R2": 0.9793812544217342,
+  "selected_model": "random_forest",
+  "test_rows": 37831,
+  "test_municipalities": 179,
+  "test_target_mean": 15107815.68697629,
+  "mae_to_mean_target_ratio": 0.0685833707599386,
+  "features": [
+    "sigungu_key",
+    "total_population",
+    "households",
+    "population_per_household",
+    "target_month",
+    "target_day_of_week",
+    "target_is_weekend",
+    "target_season",
+    "waste_amount_t",
+    "lag_1",
+    "lag_7",
+    "rolling_mean_7",
+    "rolling_mean_14"
+  ]
+}

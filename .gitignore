@@ -6,8 +6,12 @@
 __pycache__/
 .pytest_cache/
 *.pyc
-models/
-evaluation/
+models/*
+!models/deploy/
+!models/deploy/**
+evaluation/*
+!evaluation/deploy/
+!evaluation/deploy/**
 data/interim/
 data/processed/
 !data/interim/.gitkeep

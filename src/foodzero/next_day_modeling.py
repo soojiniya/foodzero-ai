@@ -459,7 +459,10 @@ def predict_next_day(
     sk = sklearn_imports()
     payload = sk["load"](model_path)
     features = payload["features"]
-    service = pd.read_csv(service_features_path, encoding="utf-8-sig")
+    if service_features_path.suffix == ".parquet":
+        service = pd.read_parquet(service_features_path)
+    else:
+        service = pd.read_csv(service_features_path, encoding="utf-8-sig")
     service["date"] = pd.to_datetime(service["date"], errors="coerce")
     service["target_date"] = pd.to_datetime(service["target_date"], errors="coerce")
     row = service[
