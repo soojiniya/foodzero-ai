@@ -4,7 +4,8 @@
 
 ## Project Link
 
-[FoodZero GitHub Repository](https://github.com/soojiniya/foodzero-ai)
+
+🌐 [Live Demo](https://foodzero-ai.streamlit.app/)
 
 # FoodZero AI 데이터 파이프라인
 
