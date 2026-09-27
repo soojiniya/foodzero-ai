@@ -88,23 +88,23 @@ def apply_plot_style(fig: go.Figure, height: int | None = None, showlegend: bool
         "template": "plotly_dark",
         "paper_bgcolor": "rgba(0,0,0,0)",
         "plot_bgcolor": "rgba(0,0,0,0)",
-        "font": {"family": PLOT_FONT, "color": "#929891", "size": 14},
+        "font": {"family": PLOT_FONT, "color": "#929891", "size": 17},
         "margin": {"l": 16, "r": 18, "t": 18, "b": 18},
         "xaxis": {
             "gridcolor": "rgba(255,255,255,.06)",
             "zerolinecolor": "rgba(255,255,255,.08)",
             "linecolor": "rgba(255,255,255,.10)",
-            "tickfont": {"color": "#929891", "size": 13},
-            "title": {"font": {"color": "#929891", "size": 13}},
+            "tickfont": {"color": "#929891", "size": 16},
+            "title": {"font": {"color": "#929891", "size": 16}},
         },
         "yaxis": {
             "gridcolor": "rgba(255,255,255,.06)",
             "zerolinecolor": "rgba(255,255,255,.08)",
             "linecolor": "rgba(255,255,255,.10)",
-            "tickfont": {"color": "#929891", "size": 13},
-            "title": {"font": {"color": "#929891", "size": 13}},
+            "tickfont": {"color": "#929891", "size": 16},
+            "title": {"font": {"color": "#929891", "size": 16}},
         },
-        "legend": {"font": {"color": "#929891", "size": 13}, "orientation": "h", "y": 1.05},
+        "legend": {"font": {"color": "#929891", "size": 16}, "orientation": "h", "y": 1.05},
     }
     if height:
         layout["height"] = height
@@ -117,7 +117,15 @@ def apply_plot_style(fig: go.Figure, height: int | None = None, showlegend: bool
 def status_badge(level: str) -> str:
     label = normalize_status(level)
     css = STATUS_CLASS.get(level, "status-normal")
-    return f'<span class="status-badge {css}">{label}</span>'
+    if label == "확인 필요":
+        content = "<span>확인</span><span>필요</span>"
+        css = f"{css} status-two-line"
+    elif label == "우선 확인":
+        content = "<span>우선</span><span>확인</span>"
+        css = f"{css} status-two-line"
+    else:
+        content = label
+    return f'<span class="status-badge {css}" aria-label="{label}">{content}</span>'
 
 
 def management_status_badge(level: str) -> str:
@@ -825,6 +833,12 @@ def apply_css() -> None:
           font-weight: 800;
           border: 1px solid transparent;
         }
+        .status-badge.status-two-line {
+          flex-direction:column;
+          gap:0;
+          line-height:1.05;
+          white-space:normal;
+        }
         .status-normal { color:#2f6b4f; background: var(--fz-soft-green); border-color:#cbdcc6; }
         .status-attention { color:#96651c; background: var(--fz-soft-amber); border-color:#efd39a; }
         .status-high { color:#b74e3d; background: var(--fz-soft-red); border-color:#edc0b8; }
@@ -1040,7 +1054,7 @@ def apply_css() -> None:
         .eyebrow, .editorial-kicker, .home-section-kicker, .home-ranking-label, .home-forecast-note, .home-dark-kicker, .forecast-preview .forecast-label, .data-meta, .fz-sidebar-subtitle, .fz-sidebar-meta { text-transform:uppercase; letter-spacing:.1em; font-weight:700 !important; }
         .landing-copy, .editorial-copy, .home-section-copy, .fz-page-desc, .section-desc, .story-text, .intro-quiet, .light-list, .tech-note, .footer, .visual-caption, .summary-note, .summary-main-note, .stat-note, .prediction-date { font-weight:400 !important; }
         .home-insight, .compact-row, .meta-value { font-weight:500 !important; }
-        .landing-title { width:max-content; max-width:100%; font-size:clamp(52px,3.8vw,82px); font-weight:780 !important; line-height:1.02; letter-spacing:-.04em; word-break:keep-all; overflow-wrap:normal; }
+        .landing-title { width:max-content; max-width:100%; font-size:clamp(40px,2.9vw,56px); font-weight:780 !important; line-height:1.1; letter-spacing:-.04em; word-break:keep-all; overflow-wrap:normal; }
         .landing-title .hero-line { display:block; white-space:nowrap; word-break:keep-all; overflow-wrap:normal; line-break:strict; }
         .fz-page-title, .section-title, .editorial-title, .home-section-title, .dark-band h2, .story-title { word-break:keep-all; overflow-wrap:normal; }
         .landing-hero-copy { padding:0; }
@@ -1123,8 +1137,28 @@ def apply_css() -> None:
         div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .stSelectbox label p { color:var(--fz-muted) !important; }
         div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] > div { background:#101210 !important; border-color:rgba(255,255,255,.14) !important; }
         div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] span, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] div { color:var(--fz-text) !important; }
-        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) { background:radial-gradient(circle at 84% 18%, rgba(220,225,222,.055), transparent 28%); color:var(--fz-text); margin-left:clamp(-50px,-3vw,-18px); margin-right:clamp(-50px,-3vw,-18px); padding:clamp(52px,5.4vw,78px) clamp(22px,3.4vw,50px); }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) { background:radial-gradient(circle at 84% 18%, rgba(220,225,222,.055), transparent 28%); color:var(--fz-text); margin-left:clamp(-50px,-3vw,-18px); margin-right:clamp(-50px,-3vw,-18px); padding:clamp(52px,5.4vw,78px) clamp(22px,3.4vw,50px); align-items:stretch !important; }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) [data-testid="column"] {
+          display:flex;
+          flex-direction:column;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) [data-testid="column"] > div {
+          display:flex;
+          flex:1 1 auto;
+          flex-direction:column;
+        }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .home-section { padding-top:0; border-top:0; }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .change-detection-section {
+          display:flex;
+          flex-direction:column;
+          flex:1 1 auto;
+          height:100%;
+          box-sizing:border-box;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .change-detection-section:after {
+          margin-top:auto;
+          background:var(--fz-border);
+        }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .compact-list { border-color:rgba(255,255,255,.12); }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .compact-row { border-color:rgba(255,255,255,.12); }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .status-badge {
@@ -1231,7 +1265,7 @@ def apply_css() -> None:
         div[data-testid="stSelectbox"] label p, div[data-testid="stDateInput"] label p, div[data-testid="stMultiSelect"] label p { color:var(--fz-muted) !important; }
         .stButton > button { background:#f0f2ef; color:#070907; border:1px solid #f0f2ef; border-radius:7px; min-height:44px; font-weight:700; box-shadow:none; }
         div[data-testid="stHorizontalBlock"]:has(div[data-testid="stSelectbox"]):has(.stButton) .stButton { margin-top:28px; }
-        div[data-testid="stHorizontalBlock"]:has(div[data-testid="stSelectbox"]):has(.stButton) .stButton > button { min-height:40px; height:40px; }
+        div[data-testid="stHorizontalBlock"]:has(div[data-testid="stSelectbox"]):has(.stButton) .stButton > button { min-height:44px; height:44px; font-size:18px !important; }
         [data-testid="stBaseButton-secondary"] { background:transparent !important; color:var(--fz-text) !important; border-color:rgba(255,255,255,.24) !important; }
         .stButton > button:hover { background:#fff; color:#000; border-color:#fff; }
         [data-testid="stBaseButton-secondary"]:hover { background:rgba(255,255,255,.06) !important; color:var(--fz-text) !important; border-color:rgba(255,255,255,.55) !important; }
@@ -1258,7 +1292,11 @@ def apply_css() -> None:
           position:sticky;
           top:0;
           z-index:20;
+          display:flex;
+          width:100%;
+          max-width:1500px;
           align-items:center;
+          justify-content:space-between;
           gap:10px;
           box-sizing:border-box;
           height:72px;
@@ -1270,6 +1308,8 @@ def apply_css() -> None:
           backdrop-filter:blur(14px);
         }
         div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"] {
+          flex:1 1 0;
+          width:auto !important;
           display:flex;
           flex-direction:column;
           justify-content:center;
@@ -1394,11 +1434,17 @@ def apply_css() -> None:
           padding-bottom:clamp(24px,3vw,38px);
           border-bottom:1px solid var(--fz-border);
         }
+        .page-hero > div:first-child {
+          flex:1 1 auto;
+          min-width:0;
+          width:100%;
+        }
         .fz-page-title {
-          max-width:920px;
+          max-width:none;
           font-size:clamp(38px,4.2vw,60px);
           line-height:1.06;
           letter-spacing:-.045em;
+          white-space:nowrap;
         }
         .fz-page-desc {
           max-width:760px;
@@ -1603,6 +1649,222 @@ def apply_css() -> None:
           font-size:14.5px;
           padding:15px 0;
         }
+        .stApp {
+          font-size:20px;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button,
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child .stButton > button {
+          font-size:20px;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button *,
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button p,
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button span {
+          font-size:20px !important;
+        }
+        .landing-copy,
+        .editorial-copy,
+        .home-section-copy,
+        .fz-page-desc,
+        .section-desc,
+        .story-text,
+        .tech-note,
+        .light-list,
+        .intro-quiet,
+        .model-copy {
+          font-size:21px;
+        }
+        .hero-note-copy,
+        .service-copy,
+        .pipeline-flow p,
+        .footer span,
+        .usage-flow span,
+        .model-metrics span,
+        .stat-note,
+        .summary-note,
+        .summary-main-note,
+        .prediction-date,
+        .data-meta {
+          font-size:18px;
+        }
+        .eyebrow,
+        .page-eyebrow,
+        .editorial-kicker,
+        .home-section-kicker,
+        .home-ranking-label,
+        .home-forecast-note,
+        .home-dark-kicker,
+        .forecast-preview .forecast-label,
+        .service-num,
+        .pipeline-flow span,
+        .model-kicker,
+        .summary-main-label,
+        .summary-label,
+        .stat-label,
+        .prediction-label,
+        .compact-row.head {
+          font-size:15px !important;
+        }
+        .hero-note-title {
+          font-size:16px;
+        }
+        .service-title {
+          font-size:25px;
+        }
+        .pipeline-flow strong {
+          font-size:22px;
+        }
+        .section-title {
+          font-size:30px;
+        }
+        .compact-row {
+          font-size:18px;
+        }
+        .status-badge {
+          font-size:16px;
+        }
+        .management-table,
+        .fz-table {
+          font-size:18px;
+        }
+        .stButton > button,
+        div[data-baseweb="select"] span,
+        div[data-baseweb="select"] div,
+        div[data-testid="stSelectbox"] label p,
+        div[data-testid="stDateInput"] label p,
+        div[data-testid="stMultiSelect"] label p,
+        input,
+        textarea,
+        select {
+          font-size:18px !important;
+        }
+        .st-key-predict-date div[data-baseweb="select"] span,
+        .st-key-predict-date div[data-baseweb="select"] div {
+          font-size:18px !important;
+        }
+        .editorial-note-kicker {
+          font-size:14px;
+        }
+        .editorial-note-copy {
+          font-size:18px;
+        }
+        .home-insight {
+          font-size:18px;
+          line-height:1.6;
+        }
+        .home-insight strong {
+          font-size:18px;
+        }
+        .editorial-stat-label {
+          font-size:18px;
+          line-height:1.4;
+        }
+        .st-key-home_regions_cta button,
+        .st-key-home_prediction_cta button,
+        .st-key-home_service_region button,
+        .st-key-home_service_prediction button,
+        .st-key-home_service_management button,
+        .st-key-home_forecast_cta button,
+        .st-key-home_about_cta button,
+        .st-key-home_analysis_cta button,
+        .st-key-home_regions_cta button p,
+        .st-key-home_prediction_cta button p,
+        .st-key-home_service_region button p,
+        .st-key-home_service_prediction button p,
+        .st-key-home_service_management button p,
+        .st-key-home_forecast_cta button p,
+        .st-key-home_about_cta button p,
+        .st-key-home_analysis_cta button p {
+          font-size:19px !important;
+          line-height:1.2 !important;
+        }
+        div[data-testid="stDateInput"] input {
+          font-size:19px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.dark-band) .stButton > button,
+        div[data-testid="stHorizontalBlock"]:has(.dark-band) .stButton > button p,
+        div[data-testid="stHorizontalBlock"]:has(.dark-band) .stButton > button span {
+          font-size:19px !important;
+          line-height:1.2 !important;
+        }
+        /* Home process flow: keep all four steps on one shared baseline. */
+        .pipeline-flow {
+          align-items:stretch;
+        }
+        .pipeline-flow > div {
+          box-sizing:border-box;
+          display:flex;
+          min-width:0;
+          flex-direction:column;
+          padding:24px clamp(20px,2.1vw,32px) 24px;
+        }
+        .pipeline-flow > div:first-child {
+          padding-left:clamp(20px,2.1vw,32px);
+        }
+        .pipeline-flow span {
+          margin-bottom:10px;
+          font-size:15px !important;
+          line-height:1.2;
+        }
+        .pipeline-flow strong {
+          margin-bottom:12px;
+          font-size:22px;
+          line-height:1.2;
+          font-weight:800;
+        }
+        .pipeline-flow p {
+          display:block;
+          flex:0 0 135px;
+          max-width:260px;
+          margin:0;
+          font-size:18px;
+          line-height:1.5;
+        }
+        /* Internal pages share a wider reading frame; the Home shell stays unchanged. */
+        .block-container:has(.page-hero) {
+          max-width:1480px;
+        }
+        .block-container:has(.page-hero) .page-hero {
+          margin-bottom:clamp(22px,2.8vw,36px);
+          padding-bottom:clamp(20px,2.5vw,32px);
+        }
+        .block-container:has(.page-hero) .section-head {
+          margin:30px 0 16px;
+        }
+        .block-container:has(.page-hero) .section {
+          margin:16px 0 20px;
+        }
+        .block-container:has(.page-hero) .story-grid {
+          gap:0;
+          margin:16px 0 26px;
+          align-items:stretch;
+        }
+        .block-container:has(.page-hero) .story-step {
+          display:flex;
+          min-width:0;
+          min-height:154px;
+          flex-direction:column;
+          padding:22px clamp(22px,2.2vw,34px) 26px;
+        }
+        .block-container:has(.page-hero) .story-step:first-child {
+          padding-left:clamp(22px,2.2vw,34px);
+        }
+        .block-container:has(.page-hero) .story-text {
+          margin-top:0;
+          min-height:96px;
+        }
+        .block-container:has(.page-hero) .fz-table {
+          font-size:19px;
+        }
+        .block-container:has(.page-hero) .fz-table thead th {
+          font-size:16px;
+          padding:15px 18px;
+        }
+        .block-container:has(.page-hero) .fz-table tbody td {
+          padding:15px 18px;
+        }
+        .block-container:has(.page-hero) .footer {
+          margin-top:clamp(62px,7vw,104px);
+        }
         @media (max-width:1240px) {
           div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) {
             width:100%;
@@ -1637,16 +1899,19 @@ def apply_css() -> None:
           }
           .top-nav-meta { display:none; }
           div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button {
-            font-size:16px;
+            font-size:17px;
             padding:0 6px;
           }
           div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button *,
           div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button p,
           div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button span {
-            font-size:16px !important;
+            font-size:17px !important;
           }
           .service-index, .pipeline-flow, .model-snapshot, .footer {
             grid-template-columns:1fr;
+          }
+          .fz-page-title {
+            white-space:normal;
           }
           .service-item, .pipeline-flow > div {
             border-left:0;
@@ -1682,6 +1947,14 @@ def apply_css() -> None:
           }
           .usage-flow span:nth-child(odd) { border-left:0; padding-left:0; }
           .footer-links { grid-template-columns:1fr; }
+        }
+        @media (max-width:760px) {
+          .block-container:has(.page-hero) {
+            max-width:100%;
+          }
+          .block-container:has(.page-hero) .story-step {
+            min-height:0;
+          }
         }
         </style>
         """,
@@ -2084,10 +2357,10 @@ def render_pipeline_flow() -> None:
     render_markup(
         """
         <div class="pipeline-flow" aria-label="FoodZero 데이터 파이프라인">
-          <div><span>01</span><strong>COLLECT</strong><p>공공데이터 수집</p></div>
-          <div><span>02</span><strong>UNDERSTAND</strong><p>지역별 배출 패턴 분석</p></div>
-          <div><span>03</span><strong>FORECAST</strong><p>다음 날 배출량 예측</p></div>
-          <div><span>04</span><strong>ACT</strong><p>관리 우선 지역 확인</p></div>
+          <div><span>01</span><strong>COLLECT</strong><p>지자체별 일별 RFID 음식물쓰레기 배출 데이터를 모읍니다.</p></div>
+          <div><span>02</span><strong>UNDERSTAND</strong><p>인구와 세대, 날짜 흐름을 함께 보며 지역별 패턴을 이해합니다.</p></div>
+          <div><span>03</span><strong>FORECAST</strong><p>최근 배출 패턴을 바탕으로 다음 흐름을 예측합니다.</p></div>
+          <div><span>04</span><strong>ACT</strong><p>배출량 증가가 예상되는 지역을 사전에 확인해 수거 일정 조정, 인력·차량 배치, 감축 대상 지역 선정 등의 의사결정을 지원합니다.</p></div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -2150,7 +2423,7 @@ def page_dashboard() -> None:
             st.button(
                 "배출량 예측",
                 key="home_prediction_cta",
-                type="primary",
+                type="secondary",
                 on_click=navigate_to_page,
                 args=("배출량 예측",),
                 width="stretch",
@@ -2256,10 +2529,10 @@ def page_dashboard() -> None:
             fig.update_layout(
                 paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font={"family": PLOT_FONT, "color": "#626862", "size": 13},
-                margin={"l": 8, "r": 12, "t": 8, "b": 8},
-                xaxis={"gridcolor": "rgba(0,0,0,.06)", "zerolinecolor": "rgba(0,0,0,.08)", "linecolor": "rgba(10,15,12,.12)", "tickfont": {"color": "#626862"}},
-                yaxis={"gridcolor": "rgba(0,0,0,.06)", "zerolinecolor": "rgba(0,0,0,.08)", "linecolor": "rgba(10,15,12,.12)", "tickfont": {"color": "#17231D"}},
+                font={"family": PLOT_FONT, "color": "#C7D1C9", "size": 17},
+                margin={"l": 10, "r": 12, "t": 8, "b": 8},
+                xaxis={"gridcolor": "rgba(255,255,255,.08)", "zerolinecolor": "rgba(255,255,255,.12)", "linecolor": "rgba(255,255,255,.12)", "tickfont": {"color": "#AEB8B0", "size": 16}},
+                yaxis={"gridcolor": "rgba(255,255,255,.04)", "zerolinecolor": "rgba(255,255,255,.08)", "linecolor": "rgba(255,255,255,.12)", "tickfont": {"color": "#C7D1C9", "size": 16}},
             )
             st.plotly_chart(fig, width="stretch")
         else:
@@ -2290,7 +2563,7 @@ def page_dashboard() -> None:
             <section class="home-forecast forecast-section" aria-label="예측 기능 소개">
               <div class="editorial-kicker">Forecast simulation</div>
               <div class="editorial-title">과거의 패턴으로<br/>다음 흐름을 살펴봅니다.</div>
-              <div class="editorial-copy"><span class="sentence-line">선택한 과거 시점의 배출 기록을 바탕으로 다음 날의 음식물쓰레기 발생량을 예측해볼 수 있습니다.</span></div>
+              <div class="editorial-copy"><span class="sentence-line">선택한 과거 시점의 배출 기록을 바탕으로</span><span class="sentence-line">다음 날의 음식물쓰레기 발생량을 예측해볼 수 있습니다.</span></div>
               <div class="home-forecast-note">Historical prediction simulation · 선택한 기준일 기반</div>
             </section>
             """,
@@ -2323,10 +2596,6 @@ def page_dashboard() -> None:
     metrics_json = load_evaluation_tables()["test_metrics"]
     render_section_header("AI 예측 모델", "FoodZero는 단순 시각화가 아니라 Random Forest 기반 다음 날 예측 모델을 사용합니다.")
     render_model_snapshot(metrics_json)
-    model_cta_cols = st.columns([1, 3.2], gap="small")
-    with model_cta_cols[0]:
-        st.button("데이터 인사이트 보기", key="home_model_insight_cta", type="secondary", on_click=navigate_to_page, args=("데이터 인사이트",), width="stretch")
-
     render_markup(
         """
         <section class="dark-band" aria-label="FoodZero 소개">
