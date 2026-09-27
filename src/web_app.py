@@ -31,8 +31,17 @@ MODEL_VERSION = "foodzero-next-day-rf-v1"
 
 
 STATUS_LABELS = {"normal": "평소 수준", "attention": "확인 필요", "high": "우선 확인"}
+MANAGEMENT_STATUS_LABELS = {"normal": "안정", "attention": "주의", "high": "집중관리"}
 STATUS_CLASS = {"normal": "status-normal", "attention": "status-attention", "high": "status-high"}
 STATUS_ORDER = {"high": 0, "attention": 1, "normal": 2}
+NAV_LABELS = {
+    "Home": "FoodZero",
+    "지역 현황": "지역 데이터",
+    "배출량 예측": "배출량 예측",
+    "수거·관리 지원": "수거·관리",
+    "데이터 인사이트": "데이터 인사이트",
+    "FoodZero 소개": "프로젝트 소개",
+}
 PLOT_FONT = "Pretendard, Pretendard Variable, SUIT, Inter, Noto Sans KR, Malgun Gothic, Apple SD Gothic Neo, sans-serif"
 
 
@@ -70,6 +79,10 @@ def normalize_status(level: str) -> str:
     return STATUS_LABELS.get(str(level), str(level))
 
 
+def normalize_management_status(level: str) -> str:
+    return MANAGEMENT_STATUS_LABELS.get(str(level), str(level))
+
+
 def apply_plot_style(fig: go.Figure, height: int | None = None, showlegend: bool | None = None) -> go.Figure:
     layout: dict[str, Any] = {
         "template": "plotly_dark",
@@ -103,6 +116,12 @@ def apply_plot_style(fig: go.Figure, height: int | None = None, showlegend: bool
 
 def status_badge(level: str) -> str:
     label = normalize_status(level)
+    css = STATUS_CLASS.get(level, "status-normal")
+    return f'<span class="status-badge {css}">{label}</span>'
+
+
+def management_status_badge(level: str) -> str:
+    label = normalize_management_status(level)
     css = STATUS_CLASS.get(level, "status-normal")
     return f'<span class="status-badge {css}">{label}</span>'
 
@@ -165,6 +184,17 @@ def classify_surge(change_pct: pd.Series | np.ndarray | float, attention_pct: fl
     return pd.Series(np.select([series.ge(high_pct), series.ge(attention_pct)], ["high", "attention"], default="normal"), index=series.index)
 
 
+def calculate_change_vs_recent_average_pct(predicted_g: pd.Series | np.ndarray | float, recent_average_g: pd.Series | np.ndarray | float):
+    predicted = pd.Series(predicted_g, dtype="float64")
+    recent = pd.Series(recent_average_g, dtype="float64")
+    valid = recent.notna() & recent.gt(0)
+    change = pd.Series(np.nan, index=predicted.index, dtype="float64")
+    change.loc[valid] = (predicted.loc[valid] / recent.loc[valid] - 1) * 100
+    if np.isscalar(predicted_g) and np.isscalar(recent_average_g):
+        return float(change.iloc[0]) if not pd.isna(change.iloc[0]) else np.nan
+    return change
+
+
 def predict_for_reference_date(reference_date: pd.Timestamp) -> pd.DataFrame:
     service = load_service_features()
     payload = load_next_day_model()
@@ -174,7 +204,10 @@ def predict_for_reference_date(reference_date: pd.Timestamp) -> pd.DataFrame:
     predictions = np.clip(payload["model"].predict(rows[payload["features"]]), 0, None)
     rows["predicted_waste_g"] = predictions
     rows["predicted_waste_kg"] = rows["predicted_waste_g"] / 1000
-    rows["change_vs_recent_average_pct"] = (rows["predicted_waste_g"] / rows["recent_7day_average_g"] - 1) * 100
+    rows["change_vs_recent_average_pct"] = calculate_change_vs_recent_average_pct(
+        rows["predicted_waste_g"],
+        rows["recent_7day_average_g"],
+    )
     rows["surge_level"] = classify_surge(
         rows["change_vs_recent_average_pct"],
         payload["thresholds"]["attention"] * 100,
@@ -198,6 +231,39 @@ def dashboard_kpis(predictions: pd.DataFrame) -> dict[str, Any]:
         "surge_regions": int(predictions["surge_level"].isin(["attention", "high"]).sum()),
         "priority_regions": int(predictions["surge_level"].eq("high").sum()),
     }
+
+
+def management_kpis(predictions: pd.DataFrame) -> dict[str, int]:
+    if predictions.empty:
+        return {"municipalities": 0, "high": 0, "attention": 0, "normal": 0}
+    return {
+        "municipalities": int(predictions["sigungu_key"].nunique()),
+        "high": int(predictions["surge_level"].eq("high").sum()),
+        "attention": int(predictions["surge_level"].eq("attention").sum()),
+        "normal": int(predictions["surge_level"].eq("normal").sum()),
+    }
+
+
+def prepare_management_predictions(reference_date: pd.Timestamp) -> pd.DataFrame:
+    predictions = predict_for_reference_date(reference_date).copy()
+    if predictions.empty:
+        return predictions
+
+    metrics = load_evaluation_tables()["municipality"][["sigungu_key", "mae_to_mean_ratio"]].copy()
+    predictions = predictions.merge(metrics, on="sigungu_key", how="left")
+    predictions["risk_label"] = predictions["surge_level"].map(normalize_management_status)
+    predictions["risk_order"] = predictions["surge_level"].map(STATUS_ORDER).fillna(STATUS_ORDER["normal"])
+    predictions = predictions.sort_values(
+        ["risk_order", "change_vs_recent_average_pct", "predicted_waste_g"],
+        ascending=[True, False, False],
+        na_position="last",
+    ).reset_index(drop=True)
+    predictions["management_rank"] = np.arange(1, len(predictions) + 1)
+    return predictions
+
+
+def priority_management_predictions(predictions: pd.DataFrame) -> pd.DataFrame:
+    return predictions[predictions["surge_level"].isin(["high", "attention"])].copy()
 
 
 def make_display_table(predictions: pd.DataFrame) -> pd.DataFrame:
@@ -627,6 +693,25 @@ def apply_css() -> None:
         .compact-list { display:grid; gap: 0; border-top: 1px solid var(--fz-border); }
         .compact-row { display:grid; grid-template-columns: minmax(150px, 1.35fr) 0.8fr 0.8fr 0.6fr 0.7fr; gap: 12px; align-items:center; background:transparent; padding: 16px 0; color: var(--fz-text); font-size: 14px; border-bottom:1px solid var(--fz-border); }
         .compact-row.head { padding: 10px 0; color: var(--fz-muted); font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.05em; }
+        .risk-distribution { display:grid; gap: 12px; margin: 16px 0 34px; padding: 18px 0 8px; border-top:1px solid var(--fz-border); }
+        .risk-row { display:grid; grid-template-columns: 112px minmax(0, 1fr) 94px; gap: 16px; align-items:center; color:var(--fz-text); }
+        .risk-label { color:var(--fz-charcoal); font-size:14px; font-weight:760; }
+        .risk-track { height: 12px; border-radius:999px; background:rgba(47,107,79,.10); overflow:hidden; border:1px solid rgba(47,107,79,.10); }
+        .risk-fill { height:100%; border-radius:999px; }
+        .risk-fill-high { background:var(--fz-coral); }
+        .risk-fill-attention { background:var(--fz-amber); }
+        .risk-fill-normal { background:var(--fz-green); }
+        .risk-value { color:var(--fz-muted); font-size:13px; text-align:right; }
+        .risk-summary { display:flex; justify-content:space-between; gap:18px; align-items:flex-end; margin-bottom:4px; padding-bottom:14px; border-bottom:1px solid var(--fz-border-2); }
+        .risk-summary-label { color:var(--fz-muted); font-size:12px; letter-spacing:0.09em; text-transform:uppercase; }
+        .risk-summary-value { color:var(--fz-charcoal); font-size:24px; font-weight:780; line-height:1.1; margin-top:4px; }
+        .risk-summary-note { color:var(--fz-muted); font-size:13px; text-align:right; line-height:1.5; }
+        .management-table th,
+        .management-table td,
+        .management-table .num { text-align:left !important; }
+        .management-table .status-badge { margin-left:0; }
+        .management-table th:nth-child(2),
+        .management-table td:nth-child(2) { min-width: 170px; }
         .home-forecast { padding: 80px 0 32px; border-top: 1px solid var(--fz-border); }
         .home-forecast-inner { display:grid; grid-template-columns:minmax(0, 1fr) auto; gap:30px; align-items:end; }
         .home-forecast .editorial-copy { max-width: 660px; }
@@ -918,6 +1003,7 @@ def apply_css() -> None:
         }
         [data-testid="stAppViewContainer"], [data-testid="stMain"] { background:transparent !important; color:var(--fz-text) !important; }
         [data-testid="stMainBlockContainer"], .block-container { background:transparent !important; }
+        [data-testid="stMain"], section.stMain, .stApp { overflow-x:hidden !important; }
         :root { --fz-font-sans:Pretendard, "Pretendard Variable", "SUIT", Inter, "Noto Sans KR", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif; }
         html, body, .stApp, .stApp *, [data-testid="stSidebar"], [data-testid="stSidebar"] *, button, input, textarea, select {
           font-family:var(--fz-font-sans) !important;
@@ -926,7 +1012,7 @@ def apply_css() -> None:
         .stApp, .landing-copy, .editorial-copy, .home-section-copy, .fz-page-desc, .section-desc, .story-text, .light-list, .tech-note, .footer {
           font-weight:400;
         }
-        .block-container { max-width: 1240px; padding: 2.5rem clamp(1.2rem, 3.4vw, 3.75rem) 4.5rem; }
+        .block-container { max-width: 1320px; padding: 2.1rem clamp(1.5rem, 3vw, 3.5rem) 4rem; }
         [data-testid="stSidebar"], [data-testid="stSidebar"] > div:first-child, [data-testid="stSidebarContent"] { background:linear-gradient(180deg,#070808 0%,#0b0c0c 58%,#111313 100%) !important; border-color:var(--fz-border) !important; }
         [data-testid="stSidebar"] > div:first-child { width:242px; }
         .fz-sidebar-brand { padding:30px 24px 24px; border-color:var(--fz-border); }
@@ -941,10 +1027,10 @@ def apply_css() -> None:
         [data-testid="stSidebar"] button[kind="primary"], [data-testid="stSidebar"] [data-testid="stBaseButton-primary"] { background:transparent !important; color:var(--fz-text) !important; border-left-color:var(--fz-green) !important; font-weight:700; }
         .page-hero, .section-head { border-color:var(--fz-border); }
         .eyebrow, .editorial-kicker, .home-section-kicker, .home-insight strong, .emphasis { color:var(--fz-green) !important; }
-        .landing-hero { min-height:82vh; padding:2rem 0 5rem; grid-template-columns:minmax(620px,1.55fr) minmax(300px,.72fr); gap:clamp(20px,3.5vw,62px); }
-        div[data-testid="stHorizontalBlock"]:has(.landing-hero-copy):has(.hero-visual-wrap) { align-items:center; gap:clamp(20px,3.2vw,58px); }
-        div[data-testid="column"]:has(.landing-hero-copy) { min-width:620px; flex:1.42 1 620px !important; }
-        div[data-testid="column"]:has(.hero-visual-wrap) { flex:.78 1 320px !important; }
+        .landing-hero { min-height:72vh; padding:1.25rem 0 3.6rem; grid-template-columns:minmax(560px,1.42fr) minmax(330px,.82fr); gap:clamp(24px,3.2vw,54px); }
+        div[data-testid="stHorizontalBlock"]:has(.landing-hero-copy):has(.hero-visual-wrap) { align-items:center; gap:clamp(24px,3vw,52px); }
+        div[data-testid="column"]:has(.landing-hero-copy) { min-width:560px; flex:1.34 1 560px !important; }
+        div[data-testid="column"]:has(.hero-visual-wrap) { flex:.86 1 340px !important; }
         .fz-sidebar-title, .fz-title, .landing-title { font-weight:780 !important; }
         .fz-page-title, .editorial-title, .dark-band h2 { font-weight:760 !important; }
         .section-title, .home-section-title, .story-title { font-weight:700 !important; }
@@ -958,7 +1044,7 @@ def apply_css() -> None:
         .landing-title .hero-line { display:block; white-space:nowrap; word-break:keep-all; overflow-wrap:normal; line-break:strict; }
         .fz-page-title, .section-title, .editorial-title, .home-section-title, .dark-band h2, .story-title { word-break:keep-all; overflow-wrap:normal; }
         .landing-hero-copy { padding:0; }
-        .hero-visual-wrap { min-height:480px; }
+        .hero-visual-wrap { min-height:420px; }
         .data-visual { background:transparent; border:0; box-shadow:none; min-height:0; padding:0; overflow:visible; }
         .data-visual:before { background:radial-gradient(circle at 50% 48%, rgba(220,225,222,.09), transparent 48%), radial-gradient(circle at 50% 50%, rgba(255,255,255,.035), transparent 64%); }
         .visual-title, .visual-caption, .visual-footer { display:none; }
@@ -968,7 +1054,7 @@ def apply_css() -> None:
         .visual-svg .flow-label, .visual-svg .flow-number { display:none; }
         .orb-svg { min-height:520px; }
         .orb-svg { transform:scale(1.12); filter:drop-shadow(0 0 24px rgba(255,255,255,.14)) drop-shadow(0 0 34px rgba(104,211,145,.16)); }
-        .orb-object { position:relative; width:min(100%,480px); height:480px; margin:0 auto; overflow:visible; background:radial-gradient(circle at 50% 50%,rgba(235,239,236,.13),rgba(175,182,178,.045) 30%,transparent 62%); filter:drop-shadow(0 0 24px rgba(230,235,232,.13)) drop-shadow(0 0 32px rgba(131,215,165,.08)); }
+        .orb-object { position:relative; width:min(100%,430px); height:430px; margin:0 auto; overflow:visible; background:radial-gradient(circle at 50% 50%,rgba(235,239,236,.13),rgba(175,182,178,.045) 30%,transparent 62%); filter:drop-shadow(0 0 24px rgba(230,235,232,.13)) drop-shadow(0 0 32px rgba(131,215,165,.08)); }
         .orb-halo { position:absolute; inset:8%; border-radius:50%; background:radial-gradient(circle,rgba(230,235,232,.09),rgba(180,187,183,.035) 38%,transparent 70%); filter:blur(18px); }
         .orb-rings, .orb-points { position:absolute; inset:0; }
         .orb-ring { position:absolute; left:50%; top:50%; display:block; border:1.65px solid rgba(244,248,245,.72); border-radius:50%; box-shadow:0 0 14px rgba(255,255,255,.075), inset 0 0 10px rgba(255,255,255,.035); }
@@ -982,7 +1068,7 @@ def apply_css() -> None:
           grid-template-columns:repeat(3,minmax(0,1fr));
           gap:0;
           color:var(--fz-muted);
-          margin:-2.1rem 0 clamp(58px,6vw,92px);
+          margin:-.8rem 0 clamp(38px,4.4vw,64px);
           border-top:1px solid var(--fz-border);
           border-bottom:1px solid var(--fz-border);
         }
@@ -1005,68 +1091,77 @@ def apply_css() -> None:
           font-size:14px;
           line-height:1.5;
         }
-        .editorial-section, .home-section, .home-forecast { border-color:var(--fz-border); padding-top:clamp(90px,10vw,160px); }
-        .home-section.data-overview { background:transparent; border-top:1px solid rgba(225,230,227,.09); border-bottom:1px solid rgba(225,230,227,.09); padding:clamp(78px,9vw,132px) 0; margin-left:0; margin-right:0; }
+        .editorial-section, .home-section, .home-forecast { border-color:var(--fz-border); padding-top:clamp(54px,5.8vw,86px); }
+        .home-section.data-overview { background:transparent; border-top:1px solid rgba(225,230,227,.09); border-bottom:1px solid rgba(225,230,227,.09); padding:clamp(48px,5.6vw,76px) 0; margin-left:0; margin-right:0; }
         .editorial-stats { border-color:var(--fz-border); }
         .editorial-stat-value { color:var(--fz-charcoal); }
         .compact-list, .compact-row, .stat-row, .footer { border-color:var(--fz-border); }
         .compact-row { color:var(--fz-text); }
-        .regional-flow-section { color:#101210; }
+        .regional-flow-section { color:var(--fz-text); }
         div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) {
-          background:#e9ebe6;
-          color:#101210;
-          width:min(100%,1120px);
+          background:linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+          color:var(--fz-text);
+          width:100%;
           margin-left:auto;
           margin-right:auto;
-          margin-top:clamp(28px,4vw,56px);
-          margin-bottom:clamp(28px,4vw,56px);
-          padding:clamp(72px,7vw,112px) clamp(22px,4vw,64px);
-          border-top:1px solid rgba(255,255,255,.42);
-          border-bottom:1px solid rgba(10,15,12,.13);
+          margin-top:clamp(22px,3vw,38px);
+          margin-bottom:clamp(24px,3.4vw,44px);
+          padding:clamp(46px,5vw,72px) clamp(22px,3.4vw,50px);
+          border-top:1px solid rgba(255,255,255,.10);
+          border-bottom:1px solid rgba(255,255,255,.08);
           box-shadow:none;
           border-radius:0;
         }
         div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section { padding-top:0; border-top:0; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-title { font-size:clamp(34px,3vw,39px); line-height:1.08; white-space:nowrap; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-kicker, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-insight strong { color:#397a58 !important; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-title, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-copy, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-insight, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-ranking-label { color:#101210 !important; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-insight, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .compact-list { border-color:rgba(10,15,12,.12); }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .compact-row { color:#17231d; border-color:rgba(10,15,12,.12); }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-title { font-size:clamp(32px,2.8vw,38px); line-height:1.1; white-space:nowrap; }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-kicker, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-insight strong { color:var(--fz-green) !important; }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-title { color:var(--fz-charcoal) !important; }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-section-copy, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-insight, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-ranking-label { color:var(--fz-muted) !important; }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .home-insight, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .compact-list { border-color:var(--fz-border); }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .compact-row { color:var(--fz-text); border-color:var(--fz-border); }
         div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-testid="stPlotlyChart"] { background:transparent; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .stSelectbox label p { color:#626862 !important; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] > div { background:#f4f4f0 !important; border-color:rgba(10,15,12,.18) !important; }
-        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] span, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] div { color:#101210 !important; }
-        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) { background:radial-gradient(circle at 84% 18%, rgba(220,225,222,.055), transparent 28%); color:var(--fz-text); margin-left:clamp(-64px,-4vw,-22px); margin-right:clamp(-64px,-4vw,-22px); padding:clamp(74px,8vw,124px) clamp(22px,4vw,64px); }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) .stSelectbox label p { color:var(--fz-muted) !important; }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] > div { background:#101210 !important; border-color:rgba(255,255,255,.14) !important; }
+        div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] span, div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) div[data-baseweb="select"] div { color:var(--fz-text) !important; }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) { background:radial-gradient(circle at 84% 18%, rgba(220,225,222,.055), transparent 28%); color:var(--fz-text); margin-left:clamp(-50px,-3vw,-18px); margin-right:clamp(-50px,-3vw,-18px); padding:clamp(52px,5.4vw,78px) clamp(22px,3.4vw,50px); }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .home-section { padding-top:0; border-top:0; }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .compact-list { border-color:rgba(255,255,255,.12); }
         div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .compact-row { border-color:rgba(255,255,255,.12); }
-        div[data-testid="stHorizontalBlock"]:has(.forecast-section) { background:radial-gradient(circle at 78% 28%, rgba(220,225,222,.075), transparent 31%); color:var(--fz-text); margin-left:clamp(-64px,-4vw,-22px); margin-right:clamp(-64px,-4vw,-22px); padding:clamp(76px,8vw,128px) clamp(22px,4vw,64px); }
+        div[data-testid="stHorizontalBlock"]:has(.change-detection-section) .status-badge {
+          width: 52px;
+          height: 52px;
+          padding: 0;
+          text-align: center;
+          line-height: 1.25;
+          white-space: normal;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.forecast-section) { background:radial-gradient(circle at 78% 28%, rgba(220,225,222,.075), transparent 31%); color:var(--fz-text); margin-left:clamp(-50px,-3vw,-18px); margin-right:clamp(-50px,-3vw,-18px); padding:clamp(52px,5.5vw,82px) clamp(22px,3.4vw,50px); }
         div[data-testid="stHorizontalBlock"]:has(.forecast-section) .home-forecast { padding-top:0; border-top:0; }
         div[data-testid="stHorizontalBlock"]:has(.forecast-section) .home-forecast-note { color:var(--fz-muted) !important; }
         .forecast-preview { border-left:1px solid rgba(255,255,255,.16); padding:12px 0 12px 28px; color:var(--fz-text); }
         .forecast-preview .forecast-label { color:var(--fz-muted); font-size:11px; letter-spacing:.14em; text-transform:uppercase; }
         .forecast-preview .forecast-date { font-size:20px; margin:7px 0 16px; }
         .forecast-preview .forecast-value { color:#f3f4f1; font-size:42px; letter-spacing:-.04em; font-weight:600; }
-        .dark-band { margin-left:clamp(-64px,-4vw,-22px); margin-right:clamp(-64px,-4vw,-22px); }
-        .dark-band { background:radial-gradient(circle at 80% 30%, rgba(220,225,222,.06), transparent 34%); border:1px solid var(--fz-border); border-radius:0; margin-top:110px; }
+        .dark-band { margin-left:clamp(-50px,-3vw,-18px); margin-right:clamp(-50px,-3vw,-18px); }
+        .dark-band { background:radial-gradient(circle at 80% 30%, rgba(220,225,222,.06), transparent 34%); border:1px solid var(--fz-border); border-radius:0; margin-top:72px; }
         .dark-band:after { border-color:rgba(200,207,203,.10); box-shadow:0 0 0 42px rgba(255,255,255,.035),0 0 0 84px rgba(210,216,212,.018); }
         .home-section, .home-forecast { position:relative; }
-        .home-section:after, .home-forecast:after { content:""; display:block; height:1px; margin-top:clamp(60px,7vw,110px); background:linear-gradient(90deg,transparent,rgba(220,225,222,.18),transparent); }
+        .home-section:after, .home-forecast:after { content:""; display:block; height:1px; margin-top:clamp(34px,4.5vw,62px); background:linear-gradient(90deg,transparent,rgba(220,225,222,.18),transparent); }
         .summary-band, .prediction-spotlight, .section, .pipeline-step, .tech-note, div[data-testid="stMetric"] { background:var(--fz-surface) !important; border-color:var(--fz-border) !important; box-shadow:none !important; }
         .summary-band, .prediction-spotlight { background:transparent !important; border:0 !important; border-top:1px solid var(--fz-border) !important; border-bottom:1px solid var(--fz-border) !important; border-radius:0; }
         .editorial-stats { gap:0; padding:30px 0 32px; border-top:1px solid rgba(255,255,255,.12); border-bottom:1px solid rgba(255,255,255,.12); }
         .editorial-stats > div { padding:0 clamp(20px,3vw,42px); border-left:1px solid rgba(255,255,255,.10); }
         .editorial-stats > div:first-child { padding-left:0; border-left:0; }
         .editorial-stat-label { color:var(--fz-muted) !important; letter-spacing:.02em; }
-        .summary-band { padding:26px 0 30px !important; margin:22px 0 38px; gap:0; }
+        .summary-band { padding:24px 0 28px !important; margin:18px 0 30px; gap:0; }
         .summary-band > div { padding:0 clamp(18px,2.5vw,34px); border-left:1px solid var(--fz-border); }
         .summary-band > div:first-child { padding-left:0; border-left:0; }
-        .stat-row { gap:0; padding:24px 0 28px; margin:22px 0 44px; border-top:1px solid var(--fz-border); border-bottom:1px solid var(--fz-border); }
+        .stat-row { gap:0; padding:22px 0 26px; margin:18px 0 32px; border-top:1px solid var(--fz-border); border-bottom:1px solid var(--fz-border); }
         .stat-row > div { padding:0 clamp(18px,2.5vw,34px); border-left:1px solid var(--fz-border); }
         .stat-row > div:first-child { padding-left:0; border-left:0; }
         .stat-label, .summary-label, .summary-main-label, .prediction-label { text-transform:uppercase; letter-spacing:.08em; font-size:11px !important; }
         .stat-value { font-size:clamp(28px,3vw,42px); letter-spacing:-.035em; }
-        .section-head { border-top:1px solid var(--fz-border); padding-top:30px; margin:54px 0 20px; }
+        .section-head { border-top:1px solid var(--fz-border); padding-top:24px; margin:38px 0 18px; }
         .section-head + div[data-testid="stPlotlyChart"], .section-head + .element-container div[data-testid="stPlotlyChart"] { margin-top:10px; }
         .prediction-spotlight { grid-template-columns:minmax(320px,1.35fr) repeat(3,minmax(120px,.65fr)); gap:0; padding:28px 0 32px; margin:22px 0 42px; align-items:end; }
         .prediction-spotlight > div { padding:0 clamp(18px,2.6vw,34px); border-left:1px solid var(--fz-border); }
@@ -1114,14 +1209,14 @@ def apply_css() -> None:
           background:var(--fz-border);
           margin-top:16px;
         }
-        .fz-table { border-radius:0; }
+        .fz-table { border-radius:0; min-width:920px; font-size:14.5px; }
         div[data-testid="stDataFrame"] { border-radius:0; }
         .table-scroll { border-radius:0; }
         .notice { background:transparent !important; color:var(--fz-muted) !important; }
         .fz-table { background:var(--fz-surface); border-color:var(--fz-border); }
-        .fz-table thead th { background:#101210; color:var(--fz-text); border-color:var(--fz-border); }
-        .fz-table tbody td { background:#0c0e0d; color:var(--fz-text); border-color:var(--fz-border-2); }
-        .table-scroll { max-height:560px; overflow-y:auto; overflow-x:hidden; border:1px solid var(--fz-border); }
+        .fz-table thead th { background:#101210; color:var(--fz-text); border-color:var(--fz-border); padding:14px 16px; }
+        .fz-table tbody td { background:#0c0e0d; color:var(--fz-text); border-color:var(--fz-border-2); padding:14px 16px; }
+        .table-scroll { max-height:640px; overflow-y:auto; overflow-x:auto; border:1px solid var(--fz-border); width:100%; }
         .table-scroll .fz-table { border:0; border-radius:0; }
         .table-scroll .fz-table thead th { position:sticky; top:0; z-index:2; }
         .data-meta { color:var(--fz-muted); font-size:11px; letter-spacing:.08em; text-transform:uppercase; margin:-4px 0 12px; }
@@ -1140,8 +1235,374 @@ def apply_css() -> None:
         [data-testid="stBaseButton-secondary"] { background:transparent !important; color:var(--fz-text) !important; border-color:rgba(255,255,255,.24) !important; }
         .stButton > button:hover { background:#fff; color:#000; border-color:#fff; }
         [data-testid="stBaseButton-secondary"]:hover { background:rgba(255,255,255,.06) !important; color:var(--fz-text) !important; border-color:rgba(255,255,255,.55) !important; }
-        div[data-testid="stPlotlyChart"] { background:transparent; border:0; }
+        div[data-testid="stPlotlyChart"] { background:transparent; border:0; width:100% !important; }
+        div[data-testid="stPlotlyChart"] > div { width:100% !important; }
+        div[data-testid="stVegaLiteChart"], div[data-testid="stDataFrame"] { width:100% !important; }
         div[data-testid="stAlert"] { background:#101210; color:var(--fz-text); border-color:var(--fz-border); }
+        /* Homepage-style product shell */
+        [data-testid="stSidebar"] {
+          display:none !important;
+          visibility:hidden !important;
+          width:0 !important;
+          min-width:0 !important;
+        }
+        .block-container {
+          max-width:1320px;
+          padding-top:.9rem;
+        }
+        .landing-title {
+          width:auto;
+          max-width:780px;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) {
+          position:sticky;
+          top:0;
+          z-index:20;
+          align-items:center;
+          gap:10px;
+          box-sizing:border-box;
+          height:72px;
+          min-height:72px;
+          margin:0 auto clamp(18px,2.2vw,30px);
+          padding:0;
+          background:rgba(7,8,8,.88);
+          border-bottom:1px solid var(--fz-border);
+          backdrop-filter:blur(14px);
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"] {
+          display:flex;
+          flex-direction:column;
+          justify-content:center;
+          min-width:0;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button {
+          min-height:58px;
+          height:58px;
+          padding:0 18px;
+          border-radius:7px;
+          background:transparent !important;
+          border:1px solid transparent !important;
+          color:var(--fz-muted) !important;
+          font-size:16px;
+          font-weight:760 !important;
+          box-shadow:none !important;
+          white-space:nowrap;
+          justify-content:center;
+          text-align:center;
+          transition:background-color .16s ease, border-color .16s ease, color .16s ease;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button *,
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button p,
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button span {
+          font-size:16px !important;
+          line-height:1 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button:hover {
+          background:transparent !important;
+          border-color:transparent !important;
+          color:var(--fz-text) !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stBaseButton-primary"],
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) button[kind="primary"] {
+          color:var(--fz-charcoal) !important;
+          background:transparent !important;
+          border-color:transparent !important;
+          font-weight:900 !important;
+          box-shadow:none !important;
+          text-shadow:0 0 12px rgba(243,244,241,.34);
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child .stButton > button {
+          color:var(--fz-muted) !important;
+          min-height:58px;
+          height:58px;
+          font-size:16px;
+          font-weight:820 !important;
+          justify-content:center;
+          padding:0 18px;
+          letter-spacing:0;
+          background:transparent !important;
+          border-color:transparent !important;
+          box-shadow:none !important;
+          line-height:1;
+          text-align:center;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child [data-testid="stBaseButton-primary"],
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child button[kind="primary"] {
+          color:var(--fz-charcoal) !important;
+          background:transparent !important;
+          border-color:transparent !important;
+          font-weight:900 !important;
+          text-shadow:0 0 12px rgba(243,244,241,.34);
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child [data-testid="stVerticalBlock"] {
+          gap:0 !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child .stButton {
+          margin:0;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child .stButton > button:hover {
+          color:#fff !important;
+          background:transparent !important;
+          border-color:transparent !important;
+        }
+        .top-nav-brand span,
+        .top-nav-meta {
+          display:none;
+          color:var(--fz-muted);
+          font-size:10px;
+          letter-spacing:.12em;
+          text-transform:uppercase;
+          line-height:1.2;
+          white-space:nowrap;
+        }
+        .top-nav-brand {
+          display:none;
+        }
+        .top-nav-meta {
+          display:none;
+          text-align:right;
+          margin:0 2px 0 0;
+          font-size:10px;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:last-child {
+          align-items:center;
+          justify-content:center;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:nth-child(n+2):nth-child(-n+6) .stButton > button {
+          width:100%;
+        }
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:nth-child(n+2):nth-child(-n+6) button[data-testid="stBaseButton-primary"],
+        div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:nth-child(n+2):nth-child(-n+6) button[kind="primary"] {
+          color:var(--fz-charcoal) !important;
+          background:transparent !important;
+          border-color:transparent !important;
+          font-weight:900 !important;
+          box-shadow:none !important;
+          text-shadow:0 0 12px rgba(243,244,241,.34);
+        }
+        .page-eyebrow {
+          color:var(--fz-green);
+          font-size:11px;
+          font-weight:720;
+          letter-spacing:.14em;
+          text-transform:uppercase;
+          margin-bottom:14px;
+        }
+        .page-hero {
+          align-items:flex-start;
+          margin:0 0 clamp(26px,3.4vw,44px);
+          padding-bottom:clamp(24px,3vw,38px);
+          border-bottom:1px solid var(--fz-border);
+        }
+        .fz-page-title {
+          max-width:920px;
+          font-size:clamp(38px,4.2vw,60px);
+          line-height:1.06;
+          letter-spacing:-.045em;
+        }
+        .fz-page-desc {
+          max-width:760px;
+          font-size:18px;
+        }
+        .why-foodzero {
+          padding-top:clamp(44px,5vw,72px);
+          margin-top:0;
+        }
+        .service-index {
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:0;
+          margin:18px 0 14px;
+          border-top:1px solid var(--fz-border);
+          border-bottom:1px solid var(--fz-border);
+        }
+        .service-item {
+          display:grid;
+          grid-template-columns:44px minmax(0,1fr);
+          gap:18px;
+          padding:28px clamp(18px,2.5vw,34px) 30px;
+          border-left:1px solid var(--fz-border);
+        }
+        .service-item:first-child { border-left:0; padding-left:0; }
+        .service-num {
+          color:var(--fz-green);
+          font-size:12px;
+          letter-spacing:.14em;
+          font-weight:720;
+        }
+        .service-title {
+          color:var(--fz-text);
+          font-size:21px;
+          font-weight:700;
+          line-height:1.25;
+          margin-bottom:10px;
+        }
+        .service-copy {
+          color:var(--fz-muted);
+          font-size:15px;
+          line-height:1.62;
+        }
+        .pipeline-flow {
+          display:grid;
+          grid-template-columns:repeat(4,minmax(0,1fr));
+          gap:0;
+          margin:18px 0 42px;
+          border-top:1px solid var(--fz-border);
+          border-bottom:1px solid var(--fz-border);
+        }
+        .pipeline-flow > div {
+          position:relative;
+          padding:26px clamp(16px,2.4vw,30px) 28px;
+          border-left:1px solid var(--fz-border);
+        }
+        .pipeline-flow > div:first-child { border-left:0; padding-left:0; }
+        .pipeline-flow span {
+          display:block;
+          color:var(--fz-green);
+          font-size:11px;
+          letter-spacing:.14em;
+          font-weight:720;
+          margin-bottom:11px;
+        }
+        .pipeline-flow strong {
+          display:block;
+          color:var(--fz-text);
+          font-size:18px;
+          letter-spacing:.02em;
+          margin-bottom:8px;
+        }
+        .pipeline-flow p {
+          margin:0;
+          color:var(--fz-muted);
+          font-size:14px;
+          line-height:1.55;
+        }
+        .model-snapshot {
+          display:grid;
+          grid-template-columns:minmax(0,1.05fr) minmax(420px,.95fr);
+          gap:clamp(28px,5vw,72px);
+          align-items:end;
+          border-top:1px solid var(--fz-border);
+          border-bottom:1px solid var(--fz-border);
+          padding:30px 0 34px;
+          margin:18px 0 28px;
+        }
+        .model-kicker {
+          color:var(--fz-green);
+          font-size:11px;
+          letter-spacing:.14em;
+          text-transform:uppercase;
+          font-weight:720;
+          margin-bottom:12px;
+        }
+        .model-title {
+          color:var(--fz-text);
+          font-size:clamp(27px,3vw,42px);
+          line-height:1.12;
+          letter-spacing:-.035em;
+          font-weight:700;
+          max-width:680px;
+        }
+        .model-copy {
+          color:var(--fz-muted);
+          font-size:15px;
+          line-height:1.68;
+          margin-top:16px;
+          max-width:720px;
+        }
+        .model-metrics {
+          display:grid;
+          grid-template-columns:repeat(3,minmax(0,1fr));
+          gap:0;
+          border-top:1px solid var(--fz-border);
+        }
+        .model-metrics div {
+          padding:18px 20px 0;
+          border-left:1px solid var(--fz-border);
+        }
+        .model-metrics div:first-child { border-left:0; padding-left:0; }
+        .model-metrics span {
+          display:block;
+          color:var(--fz-muted);
+          font-size:11px;
+          letter-spacing:.09em;
+          text-transform:uppercase;
+          margin-bottom:8px;
+        }
+        .model-metrics strong {
+          display:block;
+          color:var(--fz-text);
+          font-size:clamp(26px,3vw,40px);
+          line-height:1;
+          font-weight:680;
+          letter-spacing:-.035em;
+        }
+        .usage-flow {
+          display:grid;
+          grid-template-columns:repeat(4,minmax(0,1fr));
+          gap:0;
+          border-top:1px solid var(--fz-border);
+          border-bottom:1px solid var(--fz-border);
+          margin:-18px 0 42px;
+        }
+        .usage-flow span {
+          color:var(--fz-muted);
+          font-size:13px;
+          padding:16px 18px;
+          border-left:1px solid var(--fz-border);
+        }
+        .usage-flow span:first-child { border-left:0; padding-left:0; }
+        .footer {
+          display:grid;
+          grid-template-columns:1.25fr 1.5fr .65fr 1.25fr;
+          gap:clamp(18px,3vw,46px);
+          align-items:start;
+          margin-top:clamp(82px,9vw,132px);
+          padding:30px 0 34px;
+        }
+        .footer strong {
+          display:block;
+          color:var(--fz-text);
+          font-weight:700;
+          margin-bottom:5px;
+        }
+        .footer span {
+          display:block;
+          color:var(--fz-muted);
+          font-size:13px;
+          line-height:1.7;
+        }
+        .footer-links {
+          display:grid;
+          grid-template-columns:repeat(2,minmax(0,1fr));
+          gap:2px 18px;
+        }
+        .management-table {
+          min-width:1040px;
+        }
+        .management-table th,
+        .management-table td {
+          padding-left:18px !important;
+          padding-right:18px !important;
+          line-height:1.55;
+        }
+        .management-table-wrap {
+          max-height:680px;
+        }
+        .landing-copy,
+        .editorial-copy,
+        .home-section-copy,
+        .section-desc,
+        .story-text,
+        .tech-note,
+        .light-list,
+        .intro-quiet {
+          font-size:16.5px;
+        }
+        .compact-row {
+          font-size:14.5px;
+          padding:15px 0;
+        }
         @media (max-width:1240px) {
           div[data-testid="stHorizontalBlock"]:has(.regional-flow-section) {
             width:100%;
@@ -1168,6 +1629,60 @@ def apply_css() -> None:
           .hero-visual-wrap { min-height:350px; }
           .landing-title { font-size:42px; }
         }
+        @media (max-width:1180px) {
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) {
+            position:relative;
+            top:auto;
+            grid-template-columns:none;
+          }
+          .top-nav-meta { display:none; }
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button {
+            font-size:16px;
+            padding:0 6px;
+          }
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button *,
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button p,
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) .stButton > button span {
+            font-size:16px !important;
+          }
+          .service-index, .pipeline-flow, .model-snapshot, .footer {
+            grid-template-columns:1fr;
+          }
+          .service-item, .pipeline-flow > div {
+            border-left:0;
+            border-top:1px solid var(--fz-border);
+            padding-left:0;
+          }
+          .service-item:first-child, .pipeline-flow > div:first-child { border-top:0; }
+          .model-metrics { grid-template-columns:1fr; }
+          .model-metrics div {
+            border-left:0;
+            border-top:1px solid var(--fz-border);
+            padding-left:0;
+          }
+          .model-metrics div:first-child { border-top:0; }
+        }
+        @media (max-width:820px) {
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) {
+            display:block;
+            margin-bottom:44px;
+            height:auto;
+            padding:12px 0;
+          }
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"] {
+            width:100% !important;
+            margin-bottom:4px;
+          }
+          div[data-testid="stHorizontalBlock"]:has(.top-nav-brand) [data-testid="stColumn"]:first-child .stButton > button {
+            justify-content:center;
+          }
+          .top-nav-brand { text-align:center; margin-bottom:8px; }
+          .usage-flow {
+            grid-template-columns:1fr 1fr;
+          }
+          .usage-flow span:nth-child(odd) { border-left:0; padding-left:0; }
+          .footer-links { grid-template-columns:1fr; }
+        }
         </style>
         """,
     )
@@ -1179,38 +1694,29 @@ def render_markup(markup: str, **_: Any) -> None:
 
 
 def navigation(latest_date: pd.Timestamp) -> str:
-    pages = ["Home", "지역 현황", "배출량 예측", "데이터 인사이트", "FoodZero 소개"]
-    with st.sidebar:
-        render_markup(
-            """
-            <div class="fz-sidebar-brand">
-              <div class="fz-sidebar-title">FoodZero</div>
-              <div class="fz-sidebar-subtitle">Environmental Data Intelligence</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
+    pages = ["Home", "지역 현황", "배출량 예측", "수거·관리 지원", "데이터 인사이트", "FoodZero 소개"]
+    page = st.session_state.get("page_navigation", "Home")
+    nav_cols = st.columns([1.25, 1, 1.05, 1, 1.16, 1.12], gap="small", vertical_alignment="center")
+    with nav_cols[0]:
+        st.button(
+            "FoodZero",
+            key="top_nav_home",
+            type="primary" if page == "Home" else "secondary",
+            on_click=navigate_to_page,
+            args=("Home",),
+            width="stretch",
         )
-        page = st.session_state.get("page_navigation", "Home")
-        for page_index, nav_page in enumerate(pages):
+        render_markup('<div class="top-nav-brand" aria-hidden="true"></div>', unsafe_allow_html=True)
+    for page_index, nav_page in enumerate(pages[1:], start=1):
+        with nav_cols[page_index]:
             st.button(
-                nav_page,
-                key=f"sidebar_nav_{page_index}",
+                NAV_LABELS[nav_page],
+                key=f"top_nav_{page_index}",
                 type="primary" if nav_page == page else "secondary",
                 on_click=navigate_to_page,
                 args=(nav_page,),
                 width="stretch",
             )
-        render_markup(
-            f"""
-            <div class="fz-sidebar-meta">
-              DATASET
-              <strong>2021 — 2024</strong>
-              VERSION
-              <strong>v1.0</strong>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
     return page
 
 
@@ -1219,12 +1725,14 @@ def navigate_to_page(page: str) -> None:
     st.session_state["page_navigation"] = page
 
 
-def render_page_title(title: str, description: str, control_html: str = "") -> None:
+def render_page_title(title: str, description: str, control_html: str = "", eyebrow: str = "") -> None:
     control = f"<div>{control_html}</div>" if control_html else ""
+    eyebrow_html = f'<div class="page-eyebrow">{escape_text(eyebrow)}</div>' if eyebrow else ""
     render_markup(
         f"""
         <div class="page-hero">
           <div>
+            {eyebrow_html}
             <div class="fz-page-title">{title}</div>
             <div class="fz-page-desc">{description}</div>
           </div>
@@ -1335,6 +1843,92 @@ def render_html_table(
         """,
         unsafe_allow_html=True,
     )
+
+
+def render_management_table(predictions: pd.DataFrame, max_rows: int | None = None, include_error_reference: bool = True) -> None:
+    shown = predictions.head(max_rows) if max_rows else predictions
+    if shown.empty:
+        render_editorial_note("NOTE", "선택 조건에 해당하는 지역이 없습니다.")
+        return
+
+    body_rows = []
+    for _, row in shown.iterrows():
+        error_ratio = row.get("mae_to_mean_ratio")
+        error_text = format_abs_pct(float(error_ratio) * 100) if error_ratio is not None and not pd.isna(error_ratio) else "-"
+        error_cell = f"<td class='num'>{error_text}</td>" if include_error_reference else ""
+        body_rows.append(
+            "<tr>"
+            f"<td class='num'>{int(row['management_rank'])}</td>"
+            f"<td>{escape_text(row['sigungu_key'])}</td>"
+            f"<td class='num'>{format_weight(row['predicted_waste_g'])}</td>"
+            f"<td class='num'>{format_weight(row['recent_7day_average_g'])}</td>"
+            f"<td class='num'>{format_pct(row['change_vs_recent_average_pct'])}</td>"
+            f"<td>{management_status_badge(row['surge_level'])}</td>"
+            f"{error_cell}"
+            "</tr>"
+        )
+    error_header = '<th class="num">예측 오차 참고</th>' if include_error_reference else ""
+    render_markup(
+        f"""
+        <div class="table-scroll management-table-wrap">
+        <table class="fz-table management-table">
+          <thead>
+            <tr>
+              <th class="num">관리 순위</th>
+              <th>지역</th>
+              <th class="num">예측 배출량</th>
+              <th class="num">최근 7일 평균</th>
+              <th class="num">변화율</th>
+              <th>위험도</th>
+              {error_header}
+            </tr>
+          </thead>
+          <tbody>
+        """
+        + "".join(body_rows)
+        + """
+          </tbody>
+        </table>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_risk_distribution(kpis: dict[str, int]) -> None:
+    total = max(int(kpis.get("municipalities", 0)), 1)
+    action_needed = int(kpis.get("high", 0)) + int(kpis.get("attention", 0))
+    action_pct = action_needed / total * 100
+    summary = f"""
+        <div class="risk-summary">
+          <div>
+            <div class="risk-summary-label">관리 확인 필요</div>
+            <div class="risk-summary-value">{action_needed:,}곳</div>
+          </div>
+          <div class="risk-summary-note">전체 {int(kpis.get("municipalities", 0)):,}개 지역 중 {action_pct:.1f}%</div>
+        </div>
+    """
+    rows = [
+        ("집중관리", "high", int(kpis.get("high", 0))),
+        ("주의", "attention", int(kpis.get("attention", 0))),
+        ("안정", "normal", int(kpis.get("normal", 0))),
+    ]
+    fragments = []
+    for label, level, count in rows:
+        pct = count / total * 100
+        display_pct = max(pct, 1.4) if count else 0
+        fragments.append(
+            f"""
+            <div class="risk-row">
+              <div class="risk-label">{escape_text(label)}</div>
+              <div class="risk-track" aria-label="{escape_text(label)} {count:,}곳">
+                <div class="risk-fill risk-fill-{level}" style="width:{display_pct:.2f}%"></div>
+              </div>
+              <div class="risk-value">{count:,}곳 · {pct:.1f}%</div>
+            </div>
+            """
+        )
+    render_markup(f"<div class='risk-distribution'>{summary}{''.join(fragments)}</div>", unsafe_allow_html=True)
 
 
 def status_text(level: str) -> str:
@@ -1455,6 +2049,71 @@ def render_stat_row(items: list[tuple[str, str, str]]) -> None:
     render_markup(f"<div class='stat-row'>{''.join(cells)}</div>", unsafe_allow_html=True)
 
 
+def render_service_index() -> None:
+    render_markup(
+        """
+        <div class="service-index" aria-label="FoodZero 핵심 서비스">
+          <div class="service-item">
+            <div class="service-num">01</div>
+            <div>
+              <div class="service-title">지역 배출 흐름 분석</div>
+              <div class="service-copy">지역별 실제 배출 기록과 변화 패턴을 확인합니다.</div>
+            </div>
+          </div>
+          <div class="service-item">
+            <div class="service-num">02</div>
+            <div>
+              <div class="service-title">다음 날 배출량 예측</div>
+              <div class="service-copy">과거 배출 패턴을 기반으로 다음 시점의 배출량을 예측합니다.</div>
+            </div>
+          </div>
+          <div class="service-item">
+            <div class="service-num">03</div>
+            <div>
+              <div class="service-title">수거·관리 우선 지역 탐색</div>
+              <div class="service-copy">평상시보다 배출 증가가 예상되는 지역을 우선 확인합니다.</div>
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_pipeline_flow() -> None:
+    render_markup(
+        """
+        <div class="pipeline-flow" aria-label="FoodZero 데이터 파이프라인">
+          <div><span>01</span><strong>COLLECT</strong><p>공공데이터 수집</p></div>
+          <div><span>02</span><strong>UNDERSTAND</strong><p>지역별 배출 패턴 분석</p></div>
+          <div><span>03</span><strong>FORECAST</strong><p>다음 날 배출량 예측</p></div>
+          <div><span>04</span><strong>ACT</strong><p>관리 우선 지역 확인</p></div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_model_snapshot(metrics_json: dict[str, Any]) -> None:
+    render_markup(
+        f"""
+        <div class="model-snapshot">
+          <div>
+            <div class="model-kicker">Random Forest next-day model</div>
+            <div class="model-title">과거 시점의 정보만 사용해 다음 날 배출량을 예측합니다.</div>
+            <div class="model-copy">시간 순서 기반 테스트 데이터에서 성능을 평가했으며, R²는 정확도가 아닌 결정계수로 해석합니다.</div>
+          </div>
+          <div class="model-metrics">
+            <div><span>Test MAE</span><strong>{format_weight(metrics_json["MAE"])}</strong></div>
+            <div><span>평균 대비 MAE</span><strong>{metrics_json["mae_to_mean_target_ratio"]:.2%}</strong></div>
+            <div><span>R²</span><strong>{metrics_json["R2"]:.4f}</strong></div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 def page_dashboard() -> None:
     dates = get_available_reference_dates()
     default_date = max(dates)
@@ -1468,9 +2127,10 @@ def page_dashboard() -> None:
             """
             <div class="landing-hero-copy">
               <div class="eyebrow">Environmental Data Intelligence</div>
-              <h1 class="landing-title"><span class="hero-line">버려지는 음식의</span><span class="hero-line">흐름을 읽습니다.</span></h1>
+              <h1 class="landing-title"><span class="hero-line">데이터로 예측하고,</span><span class="hero-line">더 적게 버립니다.</span></h1>
               <div class="landing-copy">
-                <span class="sentence-line">지역별 음식물쓰레기 배출 기록을 분석해 지역마다 다른 배출 패턴과 변화의 흐름을 살펴봅니다.</span>
+                <span class="sentence-line">지역별 음식물쓰레기 배출 데이터를 분석해 다음 날 배출량을 예측하고,</span>
+                <span class="sentence-line">관리가 필요한 지역을 먼저 찾아냅니다.</span>
               </div>
             </div>
             """,
@@ -1481,7 +2141,7 @@ def page_dashboard() -> None:
             st.button(
                 "지역 데이터 살펴보기",
                 key="home_regions_cta",
-                type="primary",
+                type="secondary",
                 on_click=navigate_to_page,
                 args=("지역 현황",),
                 width="stretch",
@@ -1490,7 +2150,7 @@ def page_dashboard() -> None:
             st.button(
                 "배출량 예측",
                 key="home_prediction_cta",
-                type="secondary",
+                type="primary",
                 on_click=navigate_to_page,
                 args=("배출량 예측",),
                 width="stretch",
@@ -1502,20 +2162,43 @@ def page_dashboard() -> None:
         <div class="hero-notes" aria-label="FoodZero capabilities">
           <div class="hero-note">
             <div class="hero-note-title">Regional waste data</div>
-            <div class="hero-note-copy">지역별 배출 기록</div>
+            <div class="hero-note-copy">지역별 실제 배출 기록</div>
           </div>
           <div class="hero-note">
-            <div class="hero-note-title">Pattern analysis</div>
-            <div class="hero-note-copy">지역별 변화 분석</div>
+            <div class="hero-note-title">AI forecast</div>
+            <div class="hero-note-copy">다음 날 배출량 예측</div>
           </div>
           <div class="hero-note">
-            <div class="hero-note-title">Next-day simulation</div>
-            <div class="hero-note-copy">다음 날 예측 검증</div>
+            <div class="hero-note-title">Decision support</div>
+            <div class="hero-note-copy">관리 우선 지역 확인</div>
           </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
+
+    render_markup(
+        """
+        <section class="editorial-section why-foodzero" aria-label="FoodZero가 필요한 이유">
+          <div class="editorial-kicker">Why FoodZero</div>
+          <div class="editorial-title">음식물쓰레기는 매일 같은 양으로 발생하지 않습니다.</div>
+          <div class="editorial-copy">
+            지역 규모, 요일, 최근 배출 흐름에 따라 발생량은 달라집니다. FoodZero는 사후 대응에 머무르지 않고,
+            다음 흐름을 먼저 읽어 수거와 관리 판단에 필요한 신호를 정리합니다.
+          </div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+    render_section_header("FoodZero가 하는 일", "분석, 예측, 관리 우선순위를 하나의 서비스 흐름으로 연결합니다.")
+    render_service_index()
+    service_cta_cols = st.columns([1, 1, 1, 2.4], gap="small")
+    with service_cta_cols[0]:
+        st.button("지역 데이터", key="home_service_region", type="secondary", on_click=navigate_to_page, args=("지역 현황",), width="stretch")
+    with service_cta_cols[1]:
+        st.button("배출량 예측", key="home_service_prediction", type="secondary", on_click=navigate_to_page, args=("배출량 예측",), width="stretch")
+    with service_cta_cols[2]:
+        st.button("수거·관리", key="home_service_management", type="secondary", on_click=navigate_to_page, args=("수거·관리 지원",), width="stretch")
 
     dataset = load_next_day_dataset()
     counts = load_data_overview_counts()
@@ -1523,9 +2206,9 @@ def page_dashboard() -> None:
     render_markup(
         f"""
         <section class="home-section data-overview" aria-label="데이터 개요">
-          <div class="home-section-kicker">Data overview</div>
-          <h2 class="home-section-title">지역의 배출 기록을 하나의 흐름으로</h2>
-          <p class="home-section-copy"><span class="sentence-line">FoodZero는 공공데이터에 기록된 지역별 배출량을 같은 시간축 위에서 읽습니다.</span><span class="sentence-line">숫자보다 먼저, 어디에서 어떤 변화가 생기는지 바라봅니다.</span></p>
+          <div class="home-section-kicker">FoodZero in numbers</div>
+          <h2 class="home-section-title">실제 프로젝트 데이터로 구성한 예측 기반</h2>
+          <p class="home-section-copy"><span class="sentence-line">공공데이터에 기록된 지역별 배출량을 같은 시간축 위에서 정리하고,</span><span class="sentence-line">다음 날 예측이 가능한 관측치를 모델링에 활용했습니다.</span></p>
           <div class="editorial-stats">
             <div><div class="editorial-stat-value">{counts['modeling_rows']:,}</div><div class="editorial-stat-label">예측 모델 관측치</div></div>
             <div><div class="editorial-stat-value">{source_regions:,}</div><div class="editorial-stat-label">예측 가능 지역</div></div>
@@ -1592,7 +2275,7 @@ def page_dashboard() -> None:
             <section class="home-section change-detection-section" aria-label="변화 감지">
               <div class="home-section-kicker">Signals / 03</div>
               <h2 class="home-section-title">변화가 큰 지역을 먼저 발견합니다.</h2>
-              <p class="home-section-copy"><span class="sentence-line">최근 평균과 비교해 눈에 띄는 변화가 있는 지역만 간결하게 보여줍니다.</span><span class="sentence-line">모든 지역을 같은 방식으로 읽지 않아도 됩니다.</span></p>
+              <p class="home-section-copy"><span class="sentence-line">최근 평균과 비교해 눈에 띄는 변화가 있는 지역만 간결하게 보여주며</span><span class="sentence-line">모든 지역을 같은 방식으로 읽지 않아도 됩니다.</span></p>
             </section>
             """,
             unsafe_allow_html=True,
@@ -1634,12 +2317,22 @@ def page_dashboard() -> None:
             width="stretch",
         )
 
+    render_section_header("작동 방식", "공공데이터를 수집하고, 지역별 패턴을 이해한 뒤, 다음 날 예측과 관리 판단으로 연결합니다.")
+    render_pipeline_flow()
+
+    metrics_json = load_evaluation_tables()["test_metrics"]
+    render_section_header("AI 예측 모델", "FoodZero는 단순 시각화가 아니라 Random Forest 기반 다음 날 예측 모델을 사용합니다.")
+    render_model_snapshot(metrics_json)
+    model_cta_cols = st.columns([1, 3.2], gap="small")
+    with model_cta_cols[0]:
+        st.button("데이터 인사이트 보기", key="home_model_insight_cta", type="secondary", on_click=navigate_to_page, args=("데이터 인사이트",), width="stretch")
+
     render_markup(
         """
         <section class="dark-band" aria-label="FoodZero 소개">
           <div class="home-dark-kicker">FoodZero</div>
           <h2>더 적게 버리기 위한 데이터.</h2>
-          <p>FoodZero는 지역별 배출 기록을 이해 가능한 데이터로 바꾸고, 다음 의사결정을 위한 정보를 제공합니다.</p>
+          <p>FoodZero는 지역별 배출 기록을 이해 가능한 데이터로 바꾸고, 다음 날 배출량 예측과 관리 우선 지역 분석을 통해 수거·관리 의사결정을 지원합니다.</p>
         </section>
         """,
         unsafe_allow_html=True,
@@ -1667,10 +2360,19 @@ def page_dashboard() -> None:
 
 def page_prediction() -> None:
     render_page_title(
-        "배출량 예측",
-        "과거의 특정 시점을 기준으로 당시 이용 가능한 정보만 사용해 다음 날 배출량을 예측하고 실제 결과와 비교합니다.",
+        "다음 날 음식물쓰레기 배출량을 예측합니다.",
+        "선택한 과거 기준일까지의 정보만 사용해 다음 날 배출량을 예측하고 실제 결과와 비교합니다.",
+        eyebrow="AI Forecast",
     )
     render_editorial_note("Historical backtest", "선택한 기준일까지의 정보만 모델 입력에 사용합니다.")
+    render_markup(
+        """
+        <div class="usage-flow" aria-label="배출량 예측 사용 흐름">
+          <span>01 지역 선택</span><span>02 기준일 선택</span><span>03 예측 실행</span><span>04 결과 확인</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     render_section_header("지역과 기준 데이터 선택", "지역과 기준일을 선택한 뒤 예측을 실행하세요.")
     col1, col2, col3, col4 = st.columns([1, 1.5, 1.1, 0.8])
     with col1:
@@ -1766,14 +2468,68 @@ def page_prediction() -> None:
         "total_population": "인구 수",
     }
     importance["feature_label"] = importance["feature"].map(name_map).fillna(importance["feature"])
-    fig_imp = px.bar(importance.sort_values("importance_mae_increase"), x="importance_mae_increase", y="feature_label", orientation="h", labels={"importance_mae_increase": "영향도", "feature_label": "요소"}, height=390)
+    fig_imp = px.bar(importance.sort_values("importance_mae_increase"), x="importance_mae_increase", y="feature_label", orientation="h", labels={"importance_mae_increase": "영향도", "feature_label": "요소"}, height=430)
     fig_imp.update_traces(marker_color="#2f6b4f", marker_line_width=0, hovertemplate="%{y}<br>영향도 %{x:,.0f}<extra></extra>")
-    fig_imp = apply_plot_style(fig_imp, height=410, showlegend=False)
+    fig_imp = apply_plot_style(fig_imp, height=450, showlegend=False)
     st.plotly_chart(fig_imp, width="stretch")
 
 
+def page_management() -> None:
+    render_page_title(
+        "배출 증가가 예상되는 지역을 먼저 확인합니다.",
+        "다음 날 예측 결과를 평상시 배출 수준과 비교해 관리 우선 확인 지역을 제공합니다.",
+        eyebrow="Decision Support",
+    )
+    render_editorial_note("과거 데이터 기반 예측 시뮬레이션", "HISTORICAL SIMULATION · 실시간 운영 데이터가 아닌 과거 데이터 기반 분석 결과입니다.")
+
+    dates = get_available_reference_dates()
+    default_date = max(dates)
+    reference_date = st.selectbox(
+        "분석 기준일",
+        dates,
+        index=len(dates) - 1,
+        format_func=lambda x: x.strftime("%Y.%m.%d"),
+        key="management_reference_date",
+    )
+    reference_date = pd.Timestamp(reference_date)
+    predictions = prepare_management_predictions(reference_date)
+
+    render_markup(
+        f"<div class='data-meta'>분석 기준일: {reference_date.strftime('%Y.%m.%d')} &nbsp;·&nbsp; 예측 대상일: {(reference_date + pd.Timedelta(days=1)).strftime('%Y.%m.%d')}</div>",
+        unsafe_allow_html=True,
+    )
+
+    if predictions.empty:
+        render_editorial_note("NOTE", "선택한 기준일에 예측 가능한 지역이 없습니다.")
+        return
+
+    kpis = management_kpis(predictions)
+    render_section_header("관리 브리핑", "동일 기준일에 비교 가능한 지역만 집계합니다.")
+    render_stat_row(
+        [
+            ("예측 대상 지역", f"{kpis['municipalities']:,}곳", "해당 기준일 가용 지역"),
+            ("집중관리 지역", f"{kpis['high']:,}곳", "과거 분포 기준 높은 증가 수준"),
+            ("주의 지역", f"{kpis['attention']:,}곳", "평소보다 증가 예상"),
+            ("안정 지역", f"{kpis['normal']:,}곳", "평소 수준"),
+        ]
+    )
+
+    render_section_header("위험도 분포", "해당 기준일 예측 가능 지역의 위험도 구성을 보여줍니다.")
+    render_risk_distribution(kpis)
+
+    priority_predictions = priority_management_predictions(predictions)
+    render_section_header("관리 우선 확인 지역", "평상시보다 배출량 증가가 예상되어 우선 확인이 필요한 지역입니다.")
+    render_management_table(priority_predictions, max_rows=10, include_error_reference=False)
+
+    render_section_header("전체 지역 관리 현황", "지역별 모델 예측 오차 참고 지표입니다. 테스트 데이터에서 측정한 평균 배출량 대비 MAE 비율이며, 관리 우선순위 산정에는 사용되지 않습니다.")
+    risk_filter = st.selectbox("위험도 필터", ["전체", "집중관리", "주의", "안정"], key="management_risk_filter")
+    risk_to_level = {value: key for key, value in MANAGEMENT_STATUS_LABELS.items()}
+    shown = predictions if risk_filter == "전체" else predictions[predictions["surge_level"].eq(risk_to_level[risk_filter])]
+    render_management_table(shown, include_error_reference=True)
+
+
 def page_region() -> None:
-    render_page_title("지역별 배출 흐름", "지역마다 다른 음식물쓰레기 배출 패턴을 살펴보세요.")
+    render_page_title("지역별 배출 흐름", "지역마다 다른 음식물쓰레기 배출 패턴을 살펴보세요.", eyebrow="Regional Data")
     df = load_next_day_dataset()
     render_section_header("지역 선택", "시도와 시군구를 선택하면 해당 지역의 흐름을 보여줍니다.")
     col1, col2, col3 = st.columns([1, 1.5, 1.4])
@@ -1846,7 +2602,7 @@ def page_region() -> None:
 
 
 def page_analysis() -> None:
-    render_page_title("데이터 인사이트", "FoodZero가 데이터를 어떻게 읽고 예측하는지 살펴봅니다.")
+    render_page_title("FoodZero의 예측 모델을 데이터로 검증합니다.", "모델 성능, 중요 변수, 비교 결과를 분석 리포트 흐름으로 살펴봅니다.", eyebrow="Model Insights")
     tables = load_evaluation_tables()
     metrics_json = tables["test_metrics"]
     render_section_header("예측은 어느 정도 차이가 날까요?", "시간 기준으로 나눈 테스트 데이터에서 확인한 실제 평가 결과입니다.")
@@ -1860,7 +2616,7 @@ def page_analysis() -> None:
     )
     render_editorial_note("Model note", "R²는 정확도가 아닌 결정계수입니다. 모델 성능은 MAE, RMSE, R²를 함께 확인합니다.")
 
-    render_section_header("어떤 정보가 예측에 중요했을까요?", "모델이 예측할 때 상대적으로 크게 활용한 요소입니다.")
+    render_section_header("01 어떤 정보가 예측에 중요했을까요?", "모델이 예측할 때 상대적으로 크게 활용한 요소입니다.")
     importance = tables["importance"].head(8).copy()
     name_map = {
         "rolling_mean_7": "최근 7일 평균",
@@ -1874,15 +2630,15 @@ def page_analysis() -> None:
     }
     importance["feature_label"] = importance["feature"].map(name_map).fillna(importance["feature"])
     sorted_importance = importance.sort_values("importance_mae_increase")
-    fig_importance = px.bar(sorted_importance, x="importance_mae_increase", y="feature_label", orientation="h", labels={"importance_mae_increase": "영향도", "feature_label": "요소"}, height=430)
+    fig_importance = px.bar(sorted_importance, x="importance_mae_increase", y="feature_label", orientation="h", labels={"importance_mae_increase": "영향도", "feature_label": "요소"}, height=470)
     importance_colors = ["#6E756F"] * len(sorted_importance)
     if importance_colors:
         importance_colors[-1] = "#6FCF97"
     fig_importance.update_traces(marker_color=importance_colors, marker_line_width=0, hovertemplate="%{y}<br>영향도 %{x:,.0f}<extra></extra>")
-    fig_importance = apply_plot_style(fig_importance, height=450, showlegend=False)
+    fig_importance = apply_plot_style(fig_importance, height=500, showlegend=False)
     st.plotly_chart(fig_importance, width="stretch")
 
-    render_section_header("Baseline 및 모델 비교", "Validation MAE 기준으로 비교한 성능입니다.")
+    render_section_header("02 Baseline 및 모델 비교", "Validation MAE 기준으로 비교한 성능입니다.")
     comparison = tables["comparison"].copy()
     final_model = comparison.sort_values("MAE", ascending=True).iloc[0]
     final_model_name = "Random Forest" if final_model["model"] == "random_forest" else str(final_model["model"])
@@ -1897,10 +2653,10 @@ def page_analysis() -> None:
         unsafe_allow_html=True,
     )
     sorted_comparison = comparison.sort_values("MAE", ascending=False)
-    fig = px.bar(sorted_comparison, x="MAE", y="model", orientation="h", labels={"MAE": "Validation MAE(g)", "model": "모델"}, height=380)
+    fig = px.bar(sorted_comparison, x="MAE", y="model", orientation="h", labels={"MAE": "Validation MAE(g)", "model": "모델"}, height=430)
     comparison_colors = ["#70CF97" if model == "random_forest" else "#747B77" for model in sorted_comparison["model"]]
     fig.update_traces(marker_color=comparison_colors, marker_line_width=0, hovertemplate="%{y}<br>MAE %{x:,.0f} g<extra></extra>")
-    fig = apply_plot_style(fig, height=430, showlegend=False)
+    fig = apply_plot_style(fig, height=480, showlegend=False)
     st.plotly_chart(fig, width="stretch")
     comparison_display = comparison.copy()
     comparison_display["MAE"] = comparison_display["MAE"].map(format_weight)
@@ -1912,7 +2668,7 @@ def page_analysis() -> None:
         [("model", "모델"), ("split", "구분"), ("rows", "행 수"), ("MAE", "MAE"), ("RMSE", "RMSE"), ("R2", "R²")],
     )
 
-    render_section_header("지역 규모별 성능", "소형·중형·대형 지자체 그룹별 평균 성능입니다.")
+    render_section_header("03 지역 규모별 성능", "소형·중형·대형 지자체 그룹별 평균 성능입니다.")
     size_display = tables["size_group"].copy()
     size_display["mean_target_next_day"] = size_display["mean_target_next_day"].map(format_weight)
     size_display["mean_mae"] = size_display["mean_mae"].map(format_weight)
@@ -1931,7 +2687,7 @@ def page_analysis() -> None:
 
 
 def page_about() -> None:
-    render_page_title("더 적게 버리기 위한 데이터.", "FoodZero는 지역별 음식물쓰레기 배출 기록을 분석해 배출 흐름을 이해하고 다음 시점의 변화를 예측하는 환경 데이터 프로젝트입니다.")
+    render_page_title("더 적게 버리기 위한 데이터.", "FoodZero는 지역별 음식물쓰레기 배출 기록을 분석해 배출 흐름을 이해하고 다음 시점의 변화를 예측하는 환경 데이터 프로젝트입니다.", eyebrow="About FoodZero")
     render_markup(
         """
         <div class="intro-quiet">
@@ -1973,10 +2729,9 @@ def page_about() -> None:
     render_markup(
         """
         <div class="tech-note">
-          한국환경공단 RFID 음식물쓰레기 배출 데이터와 주민등록 인구 및 세대 데이터를 결합해
-          지역별 배출 흐름을 분석합니다. 분석 기간은 2021.01부터 2024.01까지입니다.
-          기상청 ASOS 데이터는 연구 과정의 weather experiment에서 함께 실험했지만,
-          현재 서비스용 next-day v1 모델에는 포함하지 않았습니다.
+          한국환경공단 RFID 음식물쓰레기 배출 데이터와 주민등록 인구·세대 데이터를 결합해 지역별 배출 흐름을 분석합니다.
+          기상청 ASOS 데이터는 연구 단계에서 추가 변수로 실험했으며,
+          현재 서비스의 다음 날 예측 모델은 배출 이력·요일·인구·세대 정보를 중심으로 구성했습니다.
         </div>
         """,
         unsafe_allow_html=True,
@@ -2011,8 +2766,24 @@ def render_footer() -> None:
     render_markup(
         """
         <div class="footer">
-          <div><strong>FoodZero</strong><br/>지역 음식물쓰레기 데이터 서비스</div>
-          <div>데이터 기준 2021–2024</div>
+          <div>
+            <strong>FoodZero</strong>
+            <span>Environmental Data Intelligence</span>
+          </div>
+          <div class="footer-links">
+            <span>지역 데이터</span>
+            <span>배출량 예측</span>
+            <span>수거·관리</span>
+            <span>데이터 인사이트</span>
+          </div>
+          <div>
+            <span>Data</span>
+            <strong>2021—2024</strong>
+          </div>
+          <div>
+            <span>Project</span>
+            <strong>Food Waste Prediction & Decision Support</strong>
+          </div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -2020,7 +2791,7 @@ def render_footer() -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="FoodZero", page_icon="FZ", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="FoodZero", page_icon="FZ", layout="wide", initial_sidebar_state="collapsed")
     apply_css()
     latest = max(get_available_reference_dates())
     page = navigation(pd.Timestamp(latest))
@@ -2030,6 +2801,8 @@ def main() -> None:
         page_region()
     elif page == "배출량 예측":
         page_prediction()
+    elif page == "수거·관리 지원":
+        page_management()
     elif page == "데이터 인사이트":
         page_analysis()
     else:
