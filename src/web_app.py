@@ -1819,6 +1819,10 @@ def apply_css() -> None:
           font-size:18px;
           line-height:1.5;
         }
+        .ai-forecast-page .fz-page-desc {
+          max-width:none;
+          white-space:nowrap;
+        }
         /* Internal pages share a wider reading frame; the Home shell stays unchanged. */
         .block-container:has(.page-hero) {
           max-width:1480px;
@@ -1949,6 +1953,9 @@ def apply_css() -> None:
           .footer-links { grid-template-columns:1fr; }
         }
         @media (max-width:760px) {
+          .ai-forecast-page .fz-page-desc {
+            white-space:normal;
+          }
           .block-container:has(.page-hero) {
             max-width:100%;
           }
@@ -2001,9 +2008,10 @@ def navigate_to_page(page: str) -> None:
 def render_page_title(title: str, description: str, control_html: str = "", eyebrow: str = "") -> None:
     control = f"<div>{control_html}</div>" if control_html else ""
     eyebrow_html = f'<div class="page-eyebrow">{escape_text(eyebrow)}</div>' if eyebrow else ""
+    page_class = " ai-forecast-page" if eyebrow == "AI Forecast" else ""
     render_markup(
         f"""
-        <div class="page-hero">
+        <div class="page-hero{page_class}">
           <div>
             {eyebrow_html}
             <div class="fz-page-title">{title}</div>
@@ -2956,7 +2964,7 @@ def page_analysis() -> None:
 
 
 def page_about() -> None:
-    render_page_title("더 적게 버리기 위한 데이터.", "FoodZero는 지역별 음식물쓰레기 배출 기록을 분석해 배출 흐름을 이해하고 다음 시점의 변화를 예측하는 환경 데이터 프로젝트입니다.", eyebrow="About FoodZero")
+    render_page_title("더 적게 버리기 위한 데이터.", "FoodZero는 지역별 음식물쓰레기 배출 기록을 분석해 배출 흐름을 이해하고<br/>다음 시점의 변화를 예측하는 환경 데이터 프로젝트입니다.", eyebrow="About FoodZero")
     render_markup(
         """
         <div class="intro-quiet">
